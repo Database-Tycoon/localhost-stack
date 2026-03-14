@@ -1,0 +1,129 @@
+version: 2
+
+models:
+  - name: metricflow_time_spine
+    description: >
+      Required MetricFlow time spine table containing one row per calendar date
+      from 2022 through 2026. MetricFlow uses this table as the backbone for all
+      time-series metric calculations and date-spine joins.
+    columns:
+      - name: date_day
+        description: Calendar date (primary key for MetricFlow time spine).
+        tests:
+          - not_null
+          - unique
+
+  - name: sem_bus_segment_speeds
+    description: >
+      MetricFlow semantic model exposing bus segment speed metrics.
+      Provides the foundation for defining measures (avg speed, trip count)
+      and dimensions (route, segment, time of day) accessible via MetricFlow
+      metric queries.
+    columns:
+      - name: segment_speed_key
+        description: Surrogate key for the segment speed record.
+        tests:
+          - not_null
+          - unique
+      - name: route_id
+        description: MTA bus route identifier (entity).
+        tests:
+          - not_null
+      - name: segment_id
+        description: Segment identifier (entity).
+        tests:
+          - not_null
+      - name: metric_date
+        description: Representative calendar date for MetricFlow time aggregation.
+        tests:
+          - not_null
+      - name: hour_of_day
+        description: Hour of day (0-23).
+        tests:
+          - not_null
+      - name: avg_speed_mph
+        description: Average speed in mph (measure).
+        tests:
+          - not_null
+      - name: min_speed_mph
+        description: Minimum speed in mph (measure).
+      - name: max_speed_mph
+        description: Maximum speed in mph (measure).
+      - name: median_speed_mph
+        description: Median speed in mph (measure).
+      - name: speed_variability_mph
+        description: Speed variability (max - min) in mph (measure).
+      - name: trip_count
+        description: Number of trips contributing to the measurement (measure).
+      - name: segment_start
+        description: Start location of the segment (dimension).
+      - name: segment_end
+        description: End location of the segment (dimension).
+
+semantic_models:
+  - name: sem_bus_segment_speeds
+    description: Semantic model for MetricFlow bus segment speed metrics.
+    model: ref('sem_bus_segment_speeds')
+    defaults:
+      agg_time_dimension: metric_date
+    entities:
+      - name: segment_speed
+        type: primary
+        expr: segment_speed_key
+      - name: route
+        type: foreign
+        expr: route_id
+      - name: segment
+        type: foreign
+        expr: segment_id
+    dimensions:
+      - name: metric_date
+        type: time
+        type_params:
+          time_granularity: day
+      - name: hour_of_day
+        type: categorical
+      - name: segment_start
+        type: categorical
+      - name: segment_end
+        type: categorical
+    measures:
+      - name: avg_bus_speed_mph
+        description: Average bus speed in mph.
+        agg: average
+        expr: avg_speed_mph
+      - name: total_trip_count
+        description: Total number of bus trips.
+        agg: sum
+        expr: trip_count
+      - name: avg_speed_variability_mph
+        description: Average speed variability in mph.
+        agg: average
+        expr: speed_variability_mph
+      - name: min_bus_speed_mph
+        description: Minimum bus speed in mph.
+        agg: min
+        expr: min_speed_mph
+      - name: max_bus_speed_mph
+        description: Maximum bus speed in mph.
+        agg: max
+        expr: max_speed_mph
+
+metrics:
+  - name: avg_bus_speed
+    description: Network-wide average bus speed in mph.
+    type: simple
+    type_params:
+      measure: avg_bus_speed_mph
+
+  - name: total_bus_trips
+    description: Total number of bus trips across the network.
+    type: simple
+    type_params:
+      measure: total_trip_count
+
+  - name: avg_speed_variability
+    description: Average bus speed variability (reliability indicator).
+    type: simple
+    type_params:
+      measure: avg_speed_variability_mph

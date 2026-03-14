@@ -1,0 +1,229 @@
+version: 2
+
+models:
+  - name: rpt_speed_bottlenecks
+    description: >
+      Top 50 slowest segments per time period, identifying recurring speed bottlenecks
+      across the MTA bus network.
+    columns:
+      - name: segment_id
+        description: Segment identifier.
+        tests:
+          - not_null
+      - name: time_period
+        description: Named time period bucket.
+        tests:
+          - not_null
+      - name: avg_speed_mph
+        description: Average speed in mph across all observations.
+        tests:
+          - not_null
+      - name: speed_rank
+        description: Rank within the time period (1=slowest).
+        tests:
+          - not_null
+
+  - name: rpt_bus_lane_effectiveness
+    description: >
+      Quantifies the speed benefit of bus lane infrastructure by comparing average
+      speeds on bus-lane segments vs non-bus-lane segments, by hour of day.
+    columns:
+      - name: time_period
+        description: Named time period.
+        tests:
+          - not_null
+      - name: hour_of_day
+        description: Hour of day (0-23).
+        tests:
+          - not_null
+      - name: bus_lane_avg_speed
+        description: Average speed on bus-lane segments.
+      - name: no_bus_lane_avg_speed
+        description: Average speed on non-bus-lane segments.
+      - name: speed_benefit_mph
+        description: Speed advantage of bus lane (bus_lane - no_bus_lane).
+
+  - name: rpt_route_reliability
+    description: >
+      Routes ranked by reliability (speed variability) and overall speed,
+      with grade distribution counts.
+    columns:
+      - name: route_id
+        description: MTA route identifier.
+        tests:
+          - not_null
+          - unique
+      - name: most_common_grade
+        description: Most frequently observed reliability grade for the route.
+        tests:
+          - not_null
+      - name: overall_avg_speed_mph
+        description: Average speed across all segments and dates.
+        tests:
+          - not_null
+      - name: reliability_rank
+        description: Rank by variability (1=most reliable).
+        tests:
+          - not_null
+
+  - name: rpt_seasonal_patterns
+    description: Bus speed patterns broken down by meteorological season, year, and borough.
+    columns:
+      - name: season
+        description: Meteorological season.
+        tests:
+          - not_null
+      - name: year_number
+        description: Calendar year.
+        tests:
+          - not_null
+      - name: avg_speed_mph
+        description: Average speed for the season/year/borough.
+        tests:
+          - not_null
+
+  - name: rpt_peak_vs_offpeak
+    description: >
+      Per-route comparison of peak (7-19) vs off-peak speeds and variability.
+    columns:
+      - name: route_id
+        description: MTA route identifier.
+        tests:
+          - not_null
+          - unique
+      - name: peak_avg_speed_mph
+        description: Average speed during peak hours.
+      - name: offpeak_avg_speed_mph
+        description: Average speed during off-peak hours.
+      - name: speed_delta_mph
+        description: Speed difference (peak minus off-peak).
+
+  - name: rpt_borough_comparison
+    description: Borough-level aggregation of speed and reliability metrics.
+    columns:
+      - name: borough
+        description: NYC borough name.
+        tests:
+          - not_null
+          - unique
+      - name: avg_speed_mph
+        description: Average speed across all routes in the borough.
+        tests:
+          - not_null
+      - name: speed_rank
+        description: Borough rank by average speed (1=fastest).
+        tests:
+          - not_null
+
+  - name: rpt_equity_analysis
+    description: >
+      Transit equity analysis showing speed distribution statistics (mean, median,
+      IQR, coefficient of variation) by borough to highlight service disparities.
+    columns:
+      - name: borough
+        description: NYC borough name.
+        tests:
+          - not_null
+          - unique
+      - name: median_speed_mph
+        description: Median route speed in the borough.
+        tests:
+          - not_null
+      - name: cv_pct
+        description: Coefficient of variation (stddev / mean * 100); lower = more equitable.
+        tests:
+          - not_null
+
+  - name: rpt_corridor_summary
+    description: >
+      Corridor-level summary with overall speed statistics and peak/off-peak
+      speed breakdowns for each bus lane corridor.
+    columns:
+      - name: corridor_street
+        description: Street name of the corridor.
+        tests:
+          - not_null
+      - name: overall_avg_speed_mph
+        description: Average speed across all hours and dates.
+        tests:
+          - not_null
+      - name: speed_rank
+        description: Rank by overall average speed (1=fastest).
+        tests:
+          - not_null
+
+  - name: rpt_time_of_day_analysis
+    description: Average bus speed and variability by hour of day and borough.
+    columns:
+      - name: hour_of_day
+        description: Hour of day (0-23).
+        tests:
+          - not_null
+      - name: time_period
+        description: Named time period.
+        tests:
+          - not_null
+      - name: avg_speed_mph
+        description: Network-wide average speed for this hour.
+        tests:
+          - not_null
+
+  - name: rpt_weekend_vs_weekday
+    description: Per-route comparison of weekend vs weekday average speeds.
+    columns:
+      - name: route_id
+        description: MTA route identifier.
+        tests:
+          - not_null
+          - unique
+      - name: weekday_avg_speed_mph
+        description: Average speed on weekdays.
+      - name: weekend_avg_speed_mph
+        description: Average speed on weekends.
+      - name: weekend_speed_delta_mph
+        description: Speed difference (weekend minus weekday).
+
+  - name: rpt_speed_distribution
+    description: >
+      Speed bucket distribution (histogram-ready) showing what percentage of
+      observations fall into each speed range, broken down by borough.
+    columns:
+      - name: borough
+        description: NYC borough.
+        tests:
+          - not_null
+      - name: speed_bucket
+        description: Speed range label.
+        tests:
+          - not_null
+      - name: record_count
+        description: Number of speed records in this bucket.
+        tests:
+          - not_null
+      - name: pct_of_borough
+        description: Percentage of borough observations in this bucket.
+        tests:
+          - not_null
+
+  - name: rpt_monthly_trends
+    description: >
+      Month-over-month speed trends by borough with MoM change in mph and percentage.
+    columns:
+      - name: year_number
+        description: Calendar year.
+        tests:
+          - not_null
+      - name: month_number
+        description: Calendar month (1-12).
+        tests:
+          - not_null
+      - name: borough
+        description: NYC borough.
+        tests:
+          - not_null
+      - name: avg_speed_mph
+        description: Average speed for the month.
+        tests:
+          - not_null
+      - name: mom_speed_change_mph
+        description: Change in average speed vs prior month in mph.

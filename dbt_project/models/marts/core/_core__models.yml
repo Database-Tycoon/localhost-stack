@@ -1,0 +1,128 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: >
+      Generated calendar dimension spanning 2022-2026. Provides date attributes
+      including weekday/weekend flags, season, fiscal year, and quarter labels
+      for use as the MetricFlow time spine and for joining with all fact tables.
+    columns:
+      - name: date_day
+        description: The calendar date (primary key).
+        tests:
+          - not_null
+          - unique
+      - name: date_key
+        description: Integer date surrogate key in YYYYMMDD format.
+        tests:
+          - not_null
+          - unique
+      - name: year_number
+        description: Four-digit calendar year.
+        tests:
+          - not_null
+      - name: quarter_number
+        description: Calendar quarter (1-4).
+        tests:
+          - not_null
+      - name: month_number
+        description: Calendar month number (1-12).
+        tests:
+          - not_null
+      - name: month_name
+        description: Full month name (e.g., January).
+        tests:
+          - not_null
+      - name: day_of_week_number
+        description: Day of week (0=Sunday, 6=Saturday per DuckDB convention).
+        tests:
+          - not_null
+      - name: day_of_week_name
+        description: Full weekday name (e.g., Monday).
+        tests:
+          - not_null
+      - name: is_weekend
+        description: True if the date falls on Saturday or Sunday.
+        tests:
+          - not_null
+      - name: season
+        description: Meteorological season (Winter, Spring, Summer, Fall).
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Winter', 'Spring', 'Summer', 'Fall']
+      - name: fiscal_year
+        description: NYC fiscal year (starts July 1; July 2024 = FY2025).
+        tests:
+          - not_null
+
+  - name: dim_time_of_day
+    description: >
+      Lookup dimension with one row per hour (0-23). Defines named time periods
+      (AM Peak, Midday, PM Peak, Evening, Overnight) used consistently across
+      all analytics models.
+    columns:
+      - name: hour_of_day
+        description: Hour of day (0-23), primary key.
+        tests:
+          - not_null
+          - unique
+      - name: time_period
+        description: Named time period bucket.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['AM Peak', 'Midday', 'PM Peak', 'Evening', 'Overnight']
+      - name: is_peak_hour
+        description: True if the hour falls within a peak period (7-19).
+        tests:
+          - not_null
+      - name: hour_label
+        description: 24-hour clock label (e.g., 07:00).
+        tests:
+          - not_null
+
+  - name: dim_bus_segments
+    description: >
+      Distinct bus segments derived from MTA speed data, deduplicated to one row
+      per segment_id.
+    columns:
+      - name: segment_key
+        description: MD5 surrogate key.
+        tests:
+          - not_null
+          - unique
+      - name: segment_id
+        description: Segment identifier (natural key).
+        tests:
+          - not_null
+          - unique
+      - name: route_id
+        description: MTA route this segment is associated with.
+        tests:
+          - not_null
+      - name: segment_start
+        description: Start location of the segment.
+      - name: segment_end
+        description: End location of the segment.
+
+  - name: dim_bus_lanes
+    description: NYC DOT bus lane corridor dimension.
+    columns:
+      - name: bus_lane_key
+        description: MD5 surrogate key derived from street + cross streets + borough.
+        tests:
+          - not_null
+          - unique
+      - name: street
+        description: Street where the bus lane is located.
+        tests:
+          - not_null
+      - name: borough
+        description: NYC borough.
+        tests:
+          - not_null
+      - name: lane_type
+        description: Type of bus lane designation.
+        tests:
+          - not_null

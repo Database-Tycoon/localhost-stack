@@ -1,0 +1,28 @@
+type: explore
+title: "Bus Segment Speeds"
+description: "Speed analysis by route, borough, and time of day"
+model: fct_bus_segment_speeds
+dimensions:
+  - column: route_id
+    label: Route
+  - column: segment_id
+    label: Segment
+  - column: metric_date
+    label: Date
+    type: timestamp
+  - column: hour_of_day
+    label: Hour
+measures:
+  - expression: "avg(avg_speed_mph)"
+    label: "Avg Speed (mph)"
+    format: "#,##0.0"
+  - expression: "avg(speed_variability)"
+    label: "Avg Speed Variability"
+    format: "#,##0.0"
+  - expression: "sum(trip_count)"
+    label: "Total Trips"
+    format: "#,##0"
+  - expression: "count(*)"
+    label: "Records"
+    format: "#,##0"
+default_time_range: P3M

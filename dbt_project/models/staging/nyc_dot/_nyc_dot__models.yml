@@ -1,0 +1,61 @@
+version: 2
+
+sources:
+  - name: nyc_dot
+    database: raw
+    schema: raw_nyc_dot
+    tables:
+      - name: traffic_speeds_nbe
+        description: NYC DOT traffic speeds from the Northbound/Eastbound sensor network.
+      - name: bus_lanes
+        description: NYC DOT bus lane corridor inventory.
+      - name: traffic_volume_counts
+        description: NYC DOT traffic volume counts by segment and direction.
+
+models:
+  - name: stg_nyc_dot__bus_lanes
+    description: Cleaned NYC DOT bus lane inventory with street and borough attributes.
+    columns:
+      - name: street
+        description: Street name where the bus lane is located.
+        tests:
+          - not_null
+      - name: from_street
+        description: Starting cross street of the bus lane segment.
+      - name: to_street
+        description: Ending cross street of the bus lane segment.
+      - name: borough
+        description: NYC borough where the bus lane is located.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island',
+                       'M', 'BK', 'Q', 'BX', 'SI']
+      - name: lane_type
+        description: Type of bus lane (e.g., Bus Lane, Select Bus Service).
+        tests:
+          - not_null
+
+  - name: stg_nyc_dot__traffic_volume_counts
+    description: Cleaned NYC DOT traffic volume counts with date and directional attributes.
+    columns:
+      - name: segment_id
+        description: Segment identifier for the traffic count location.
+        tests:
+          - not_null
+      - name: street
+        description: Street name of the segment.
+      - name: from_street
+        description: Starting cross street.
+      - name: to_street
+        description: Ending cross street.
+      - name: direction
+        description: Traffic direction (N, S, E, W).
+      - name: date
+        description: Date of the traffic count.
+        tests:
+          - not_null
+      - name: volume
+        description: Total traffic volume count for the period.
+        tests:
+          - not_null

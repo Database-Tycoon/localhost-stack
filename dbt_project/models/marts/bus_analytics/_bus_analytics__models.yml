@@ -1,0 +1,189 @@
+version: 2
+
+models:
+  - name: dim_bus_routes
+    description: >
+      MTA bus routes dimension with borough derived from route_id prefix convention
+      (Q=Queens, Bx=Bronx, B=Brooklyn, M=Manhattan, S=Staten Island).
+    columns:
+      - name: route_key
+        description: MD5 surrogate key.
+        tests:
+          - not_null
+          - unique
+      - name: route_id
+        description: MTA route identifier (natural key).
+        tests:
+          - not_null
+          - unique
+      - name: route_short_name
+        description: Short display name (e.g., B44, M15).
+        tests:
+          - not_null
+      - name: borough
+        description: NYC borough derived from route_id prefix.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Queens', 'Bronx', 'Brooklyn', 'Manhattan', 'Staten Island', 'Unknown']
+
+  - name: dim_bus_stops
+    description: MTA bus stops dimension with geographic coordinates.
+    columns:
+      - name: stop_key
+        description: MD5 surrogate key.
+        tests:
+          - not_null
+          - unique
+      - name: stop_id
+        description: Stop identifier (natural key).
+        tests:
+          - not_null
+          - unique
+      - name: stop_name
+        description: Human-readable stop name.
+        tests:
+          - not_null
+      - name: stop_lat
+        description: Latitude in decimal degrees.
+        tests:
+          - not_null
+      - name: stop_lon
+        description: Longitude in decimal degrees.
+        tests:
+          - not_null
+
+  - name: fct_bus_segment_speeds
+    description: >
+      Central fact table at the route × segment × representative_date × hour grain.
+      Speed measures include average, min, max, median, and variability (max-min).
+    columns:
+      - name: segment_speed_key
+        description: MD5 surrogate key.
+        tests:
+          - not_null
+          - unique
+      - name: route_id
+        description: MTA bus route identifier.
+        tests:
+          - not_null
+      - name: segment_id
+        description: Segment identifier.
+        tests:
+          - not_null
+      - name: metric_date
+        description: Representative calendar date for (year, month, day_of_week).
+      - name: avg_speed_mph
+        description: Average speed in mph.
+        tests:
+          - not_null
+      - name: speed_variability_mph
+        description: Difference between max and min speed in mph.
+      - name: trip_count
+        description: Number of trips contributing to the measurement.
+
+  - name: fct_route_daily_performance
+    description: >
+      Route-level daily aggregation with reliability grades (A-F) based on
+      average speed variability across all segments.
+    columns:
+      - name: route_daily_key
+        description: MD5 surrogate key.
+        tests:
+          - not_null
+          - unique
+      - name: route_id
+        description: MTA bus route identifier.
+        tests:
+          - not_null
+      - name: metric_date
+        description: Representative calendar date.
+      - name: reliability_grade
+        description: Letter grade A-F based on speed variability (A=most reliable).
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['A', 'B', 'C', 'D', 'F']
+      - name: route_avg_speed_mph
+        description: Average speed across all segments for the route on this date.
+        tests:
+          - not_null
+      - name: borough
+        description: Borough derived from route_id.
+
+  - name: fct_corridor_performance
+    description: >
+      Corridor-level performance aggregation for segments matched to bus lane corridors.
+      Grain: corridor_street × metric_date × hour_of_day.
+    columns:
+      - name: corridor_performance_key
+        description: MD5 surrogate key.
+        tests:
+          - not_null
+          - unique
+      - name: corridor_street
+        description: Street name of the bus lane corridor.
+        tests:
+          - not_null
+      - name: has_bus_lane
+        description: Whether a bus lane is present on this corridor.
+        tests:
+          - not_null
+      - name: corridor_avg_speed_mph
+        description: Average speed across all segments on the corridor.
+        tests:
+          - not_null
+
+  - name: fct_traffic_volume_patterns
+    description: >
+      Traffic volume by segment, date, time period, and direction.
+      Hourly volumes are distributed from daily counts using a typical urban profile.
+    columns:
+      - name: traffic_volume_key
+        description: MD5 surrogate key.
+        tests:
+          - not_null
+          - unique
+      - name: segment_id
+        description: Segment identifier.
+        tests:
+          - not_null
+      - name: date
+        description: Date of the count.
+        tests:
+          - not_null
+      - name: time_period
+        description: Named time period bucket.
+        tests:
+          - not_null
+      - name: period_volume
+        description: Total vehicle volume during the time period.
+        tests:
+          - not_null
+
+  - name: fct_segment_speeds_hourly
+    description: >
+      Hourly grain fact table enriched with time-of-day attributes (period name,
+      peak flag, hour label) to simplify hourly analyses without extra joins.
+    columns:
+      - name: segment_speed_key
+        description: Surrogate key from fct_bus_segment_speeds.
+        tests:
+          - not_null
+          - unique
+      - name: route_id
+        description: MTA bus route identifier.
+        tests:
+          - not_null
+      - name: hour_of_day
+        description: Hour of day (0-23).
+        tests:
+          - not_null
+      - name: time_period
+        description: Named time period.
+        tests:
+          - not_null
+      - name: avg_speed_mph
+        description: Average speed in mph.
+        tests:
+          - not_null

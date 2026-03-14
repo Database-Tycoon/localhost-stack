@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+
+# DuckDB
+*.duckdb
+*.duckdb.wal
+data/
+
+# dbt
+transformation/target/
+transformation/dbt_packages/
+transformation/logs/
+dbt_project/target/
+dbt_project/dbt_packages/
+dbt_project/logs/
+
+# Rill
+rill/tmp/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+
+# Demo
+.demo_pids
+
+# DuckLake
+ducklake_data/

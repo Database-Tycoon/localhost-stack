@@ -1,0 +1,26 @@
+type: explore
+title: "Corridor Performance"
+description: "Speed and bus lane impact by corridor"
+model: fct_corridor_performance
+dimensions:
+  - column: corridor
+    label: Corridor
+  - column: has_bus_lane
+    label: Has Bus Lane
+  - column: metric_date
+    label: Date
+    type: timestamp
+measures:
+  - expression: "avg(avg_speed_mph)"
+    label: "Avg Speed (mph)"
+    format: "#,##0.0"
+  - expression: "avg(avg_speed_mph) filter (where has_bus_lane = true)"
+    label: "Avg Speed With Bus Lane (mph)"
+    format: "#,##0.0"
+  - expression: "avg(avg_speed_mph) filter (where has_bus_lane = false)"
+    label: "Avg Speed Without Bus Lane (mph)"
+    format: "#,##0.0"
+  - expression: "count(*)"
+    label: "Records"
+    format: "#,##0"
+default_time_range: P3M

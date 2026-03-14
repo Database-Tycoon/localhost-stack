@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tycoon"
+version = "0.1.0"
+description = "Database Tycoon — local-first analytics CLI for NYC transit data"
+license = "MIT"
+authors = [{name = "Database Tycoon Team"}]
+requires-python = ">=3.12"
+dependencies = [
+    "typer>=0.15.0",
+    "rich>=13.0.0",
+    "dbt-core>=1.9.0",
+    "dbt-duckdb>=1.9.0",
+    "dlt[duckdb]>=1.0.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "duckdb>=1.2.0",
+    "httpx>=0.27.0",
+    "websockets>=14.0",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0.0"]
+
+[project.scripts]
+tycoon = "tycoon.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tycoon"]
+
+[tool.uv]
+prerelease = "if-necessary-or-explicit"

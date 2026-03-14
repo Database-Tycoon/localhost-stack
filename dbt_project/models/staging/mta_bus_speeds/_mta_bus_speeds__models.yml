@@ -1,0 +1,76 @@
+version: 2
+
+sources:
+  - name: mta_bus_speeds
+    database: raw
+    schema: raw_mta_bus_speeds
+    tables:
+      - name: bus_segment_speeds_2023_2024
+        description: MTA bus segment speeds for 2023 and 2024.
+      - name: bus_segment_speeds_2025
+        description: MTA bus segment speeds for 2025.
+
+models:
+  - name: stg_mta_bus_speeds__segment_speeds
+    description: >
+      Unified staging model for MTA bus segment speeds combining the 2023-2024
+      and 2025 source tables. Deduplication is performed using a surrogate key
+      derived from (route_id, segment_id, year, month, day_of_week, hour_of_day,
+      data_source), preferring the 2025 source when conflicts exist.
+    columns:
+      - name: segment_speed_id
+        description: MD5 surrogate key for the segment speed record.
+        tests:
+          - not_null
+          - unique
+      - name: route_id
+        description: MTA bus route identifier.
+        tests:
+          - not_null
+      - name: segment_id
+        description: Segment identifier along the route.
+        tests:
+          - not_null
+      - name: year
+        description: Year of observation.
+        tests:
+          - not_null
+      - name: month
+        description: Month of observation (1-12).
+        tests:
+          - not_null
+          - accepted_values:
+              values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+      - name: day_of_week
+        description: Day of week (0=Monday, 6=Sunday or source convention).
+        tests:
+          - not_null
+      - name: hour_of_day
+        description: Hour of day (0-23).
+        tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+                       13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+      - name: avg_speed_mph
+        description: Average speed in miles per hour.
+        tests:
+          - not_null
+      - name: min_speed_mph
+        description: Minimum observed speed in miles per hour.
+      - name: max_speed_mph
+        description: Maximum observed speed in miles per hour.
+      - name: median_speed_mph
+        description: Median speed in miles per hour.
+      - name: number_of_trips
+        description: Number of trips contributing to the speed measurement.
+      - name: segment_start
+        description: Start location of the segment.
+      - name: segment_end
+        description: End location of the segment.
+      - name: data_source
+        description: Source dataset identifier ('2023_2024' or '2025').
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['2023_2024', '2025']

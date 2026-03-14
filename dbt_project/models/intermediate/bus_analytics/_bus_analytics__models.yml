@@ -1,0 +1,83 @@
+version: 2
+
+models:
+  - name: int_representative_dates
+    description: >
+      Maps each (year, month, day_of_week) tuple from the bus speed data to a
+      representative calendar date (the first occurrence of that weekday in that
+      month/year). This bridge table enables MetricFlow time-series aggregation
+      on data that is reported at the weekday-period grain rather than a specific date.
+    columns:
+      - name: year
+        description: Calendar year of the observation period.
+        tests:
+          - not_null
+      - name: month
+        description: Calendar month (1-12).
+        tests:
+          - not_null
+      - name: day_of_week
+        description: Day of week as reported in the source data.
+        tests:
+          - not_null
+      - name: metric_date
+        description: First occurrence of the given day_of_week in the year-month period.
+        tests:
+          - not_null
+          - unique
+
+  - name: int_segment_bus_lane_match
+    description: >
+      Fuzzy street-name match between MTA bus speed segments and NYC DOT bus lane
+      corridors. Each segment appears exactly once; has_bus_lane indicates whether
+      a matching bus lane corridor was found.
+    columns:
+      - name: segment_id
+        description: Segment identifier from the bus speed data.
+        tests:
+          - not_null
+          - unique
+      - name: route_id
+        description: MTA bus route identifier.
+        tests:
+          - not_null
+      - name: segment_start
+        description: Start location label of the segment.
+      - name: segment_end
+        description: End location label of the segment.
+      - name: lane_street
+        description: Matched bus lane street name (null if no match).
+      - name: lane_borough
+        description: Borough of the matched bus lane.
+      - name: lane_type
+        description: Type of matched bus lane.
+      - name: has_bus_lane
+        description: Whether a bus lane corridor was matched to this segment.
+        tests:
+          - not_null
+
+  - name: int_traffic_volume_hourly
+    description: >
+      Traffic volume counts distributed to hourly grain using a typical urban
+      traffic profile when only daily totals are available in the source data.
+    columns:
+      - name: segment_id
+        description: Segment identifier.
+        tests:
+          - not_null
+      - name: date
+        description: Date of the traffic count.
+        tests:
+          - not_null
+      - name: hour_of_day
+        description: Hour of day (0-23).
+        tests:
+          - not_null
+      - name: hourly_volume
+        description: Estimated vehicle volume for this hour.
+        tests:
+          - not_null
+      - name: daily_volume
+        description: Total daily volume from which the hourly estimate was derived.
+        tests:
+          - not_null

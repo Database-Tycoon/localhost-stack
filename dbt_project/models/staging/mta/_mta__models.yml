@@ -1,0 +1,54 @@
+version: 2
+
+sources:
+  - name: mta
+    database: raw
+    schema: raw_mta
+    tables:
+      - name: gtfs_routes
+        description: MTA GTFS routes reference data.
+      - name: gtfs_stops
+        description: MTA GTFS stops reference data.
+
+models:
+  - name: stg_mta__bus_routes
+    description: Cleaned MTA GTFS bus routes with standardized column types.
+    columns:
+      - name: route_id
+        description: Unique route identifier.
+        tests:
+          - not_null
+          - unique
+      - name: route_short_name
+        description: Short display name for the route (e.g., B44, M15).
+        tests:
+          - not_null
+      - name: route_long_name
+        description: Full descriptive name of the route.
+      - name: route_type
+        description: GTFS route type code (3 = Bus).
+      - name: route_color
+        description: Hex color code for the route (without #).
+      - name: route_text_color
+        description: Hex text color code for the route.
+
+  - name: stg_mta__bus_stops
+    description: Cleaned MTA GTFS bus stops with geographic coordinates.
+    columns:
+      - name: stop_id
+        description: Unique stop identifier.
+        tests:
+          - not_null
+          - unique
+      - name: stop_name
+        description: Human-readable name of the stop.
+        tests:
+          - not_null
+      - name: stop_lat
+        description: Latitude of the stop in decimal degrees.
+        tests:
+          - not_null
+      - name: stop_lon
+        description: Longitude of the stop in decimal degrees.
+        tests:
+          - not_null

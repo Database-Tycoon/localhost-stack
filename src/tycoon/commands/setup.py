@@ -1,0 +1,128 @@
+"""tycoon setup — orchestrate full environment setup."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+import time
+from typing import Annotated
+
+import typer
+
+from tycoon.config import config
+from tycoon.utils.console import console, header, info, success, error, warn
+from tycoon.utils.duckdb_utils import db_file_size_mb, remove_wal
+
+
+def _run(cmd: list[str], description: str) -> None:
+    """Run a subprocess command, streaming output. Abort on failure."""
+    info(f"Running: {' '.join(cmd)}")
+    result = subprocess.run(cmd, capture_output=False)
+    if result.returncode != 0:
+        error(f"{description} failed (exit code {result.returncode})")
+        raise typer.Exit(1)
+    success(f"{description} complete")
+
+
+def setup_cmd(
+    quick: Annotated[
+        bool,
+        typer.Option(
+            "--quick",
+            help="Ingest only 5000 records per dataset; skip 2023-2024 bus speeds.",
+        ),
+    ] = False,
+    full: Annotated[
+        bool,
+        typer.Option(
+            "--full",
+            help="Ingest all records (default behavior).",
+        ),
+    ] = False,
+    skip_ingest: Annotated[
+        bool,
+        typer.Option(
+            "--skip-ingest",
+            help="Skip ingestion; only run dbt.",
+        ),
+    ] = False,
+) -> None:
+    """Orchestrate a full environment setup: ingest data, then build dbt models."""
+    header("Tycoon Environment Setup")
+    start = time.time()
+
+    if quick and full:
+        error("Cannot specify both --quick and --full.")
+        raise typer.Exit(1)
+
+    mode = "quick" if quick else "full"
+    info(f"Mode: {mode}" + (" (skip-ingest)" if skip_ingest else ""))
+
+    # 1. Ensure data directory exists
+    info("Ensuring data directory exists...")
+    config.ensure_data_dir()
+    success(f"Data directory: {config.data_dir}")
+
+    # 2. Remove stale WAL files
+    for db_path, label in [(config.raw_db, "raw"), (config.local_db, "local")]:
+        if remove_wal(db_path):
+            warn(f"Removed stale WAL file for {label} database")
+
+    # 3. Ingestion
+    tycoon_bin = [sys.executable, "-m", "tycoon"]
+
+    if not skip_ingest:
+        # Build shared ingest flags
+        ingest_flags: list[str] = []
+        bus_speeds_flags: list[str] = []
+
+        if quick:
+            ingest_flags = ["--max-records", "5000"]
+            bus_speeds_flags = ["--max-records", "5000", "--skip-2023-2024"]
+
+        # 3a. DOT ingestion
+        console.rule("[bold cyan]Step 1/3 — NYC DOT Ingestion")
+        _run(
+            [*tycoon_bin, "ingest", "dot", *ingest_flags],
+            "NYC DOT ingestion",
+        )
+
+        # 3b. MTA ingestion
+        console.rule("[bold cyan]Step 2/3 — MTA GTFS Ingestion")
+        _run(
+            [*tycoon_bin, "ingest", "mta", *ingest_flags],
+            "MTA GTFS ingestion",
+        )
+
+        # 3c. Bus Speeds ingestion
+        console.rule("[bold cyan]Step 3/3 — MTA Bus Speeds Ingestion")
+        _run(
+            [*tycoon_bin, "ingest", "bus-speeds", *(bus_speeds_flags or ingest_flags)],
+            "MTA Bus Speeds ingestion",
+        )
+    else:
+        info("Skipping ingestion (--skip-ingest)")
+
+    # 4. dbt build
+    console.rule("[bold cyan]dbt Build")
+    _run(
+        [
+            "dbt",
+            "build",
+            "--project-dir",
+            str(config.dbt_project_dir),
+            "--profiles-dir",
+            str(config.dbt_project_dir),
+        ],
+        "dbt build",
+    )
+
+    # 5. Summary
+    elapsed = time.time() - start
+    console.rule("[bold green]Setup Complete")
+
+    raw_size = db_file_size_mb(config.raw_db)
+    local_size = db_file_size_mb(config.local_db)
+    info(f"Raw database:   {raw_size:.1f} MB" if raw_size else "Raw database:   not found")
+    info(f"Local database: {local_size:.1f} MB" if local_size else "Local database: not found")
+    success(f"Setup finished in {elapsed:.1f}s")
