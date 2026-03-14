@@ -45,8 +45,9 @@ models:
 
   - name: rpt_route_reliability
     description: >
-      Routes ranked by reliability (speed variability) and overall speed,
-      with grade distribution counts.
+      Routes ranked by overall average speed, with reliability grade distribution counts.
+      NOTE: speed_variability_mph is not available in the source data; reliability
+      is graded by average speed in fct_route_daily_performance.
     columns:
       - name: route_id
         description: MTA route identifier.
@@ -62,7 +63,7 @@ models:
         tests:
           - not_null
       - name: reliability_rank
-        description: Rank by variability (1=most reliable).
+        description: Rank by average speed (1=fastest/most reliable).
         tests:
           - not_null
 
@@ -84,7 +85,8 @@ models:
 
   - name: rpt_peak_vs_offpeak
     description: >
-      Per-route comparison of peak (7-19) vs off-peak speeds and variability.
+      Per-route comparison of peak (7-19) vs off-peak speeds and trip counts.
+      NOTE: speed_variability_mph is not available in the source data and is omitted.
     columns:
       - name: route_id
         description: MTA route identifier.
@@ -99,7 +101,10 @@ models:
         description: Speed difference (peak minus off-peak).
 
   - name: rpt_borough_comparison
-    description: Borough-level aggregation of speed and reliability metrics.
+    description: >
+      Borough-level aggregation of speed and reliability metrics.
+      NOTE: min_speed_mph, max_speed_mph, and avg_variability_mph are not available
+      in the source data and are omitted.
     columns:
       - name: borough
         description: NYC borough name.
@@ -119,6 +124,7 @@ models:
     description: >
       Transit equity analysis showing speed distribution statistics (mean, median,
       IQR, coefficient of variation) by borough to highlight service disparities.
+      NOTE: mean_variability_mph is not available in the source data and is omitted.
     columns:
       - name: borough
         description: NYC borough name.
@@ -138,6 +144,8 @@ models:
     description: >
       Corridor-level summary with overall speed statistics and peak/off-peak
       speed breakdowns for each bus lane corridor.
+      NOTE: overall_min_speed_mph, overall_max_speed_mph, and overall_avg_variability_mph
+      are not available in the source data and are omitted.
     columns:
       - name: corridor_street
         description: Street name of the corridor.
@@ -153,7 +161,10 @@ models:
           - not_null
 
   - name: rpt_time_of_day_analysis
-    description: Average bus speed and variability by hour of day and borough.
+    description: >
+      Average bus speed by hour of day and borough.
+      NOTE: median_speed_mph and avg_variability_mph are not available in the
+      source data and are omitted.
     columns:
       - name: hour_of_day
         description: Hour of day (0-23).
@@ -169,7 +180,9 @@ models:
           - not_null
 
   - name: rpt_weekend_vs_weekday
-    description: Per-route comparison of weekend vs weekday average speeds.
+    description: >
+      Per-route comparison of weekend vs weekday average speeds.
+      NOTE: speed_variability_mph is not available in the source data and is omitted.
     columns:
       - name: route_id
         description: MTA route identifier.
@@ -189,9 +202,7 @@ models:
       observations fall into each speed range, broken down by borough.
     columns:
       - name: borough
-        description: NYC borough.
-        tests:
-          - not_null
+        description: NYC borough (null for routes without borough mapping).
       - name: speed_bucket
         description: Speed range label.
         tests:
@@ -208,6 +219,7 @@ models:
   - name: rpt_monthly_trends
     description: >
       Month-over-month speed trends by borough with MoM change in mph and percentage.
+      NOTE: avg_variability_mph is not available in the source data and is omitted.
     columns:
       - name: year_number
         description: Calendar year.
@@ -218,9 +230,7 @@ models:
         tests:
           - not_null
       - name: borough
-        description: NYC borough.
-        tests:
-          - not_null
+        description: NYC borough (null for routes without borough mapping).
       - name: avg_speed_mph
         description: Average speed for the month.
         tests:

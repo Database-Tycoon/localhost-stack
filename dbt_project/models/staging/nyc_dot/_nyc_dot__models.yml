@@ -14,48 +14,87 @@ sources:
 
 models:
   - name: stg_nyc_dot__bus_lanes
-    description: Cleaned NYC DOT bus lane inventory with street and borough attributes.
+    description: >
+      Cleaned NYC DOT bus lane inventory. The source has no from_street/to_street
+      columns; corridor extent is captured by segment_id and street name only.
+      Borough is mapped from the source boro field.
     columns:
       - name: street
         description: Street name where the bus lane is located.
         tests:
           - not_null
-      - name: from_street
-        description: Starting cross street of the bus lane segment.
-      - name: to_street
-        description: Ending cross street of the bus lane segment.
+      - name: segment_id
+        description: DOT segment identifier for the bus lane (from segmentid).
       - name: borough
-        description: NYC borough where the bus lane is located.
+        description: NYC borough code as stored in source (from boro column).
         tests:
           - not_null
-          - accepted_values:
-              values: ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island',
-                       'M', 'BK', 'Q', 'BX', 'SI']
+      - name: facility
+        description: Facility name or description for the bus lane corridor.
+      - name: direction
+        description: Traffic direction the bus lane applies to.
+      - name: hours
+        description: Hours during which the bus lane is in effect.
+      - name: days
+        description: Days during which the bus lane is in effect.
       - name: lane_type
-        description: Type of bus lane (e.g., Bus Lane, Select Bus Service).
-        tests:
-          - not_null
+        description: Primary type of bus lane designation.
+      - name: lane_type1
+        description: Secondary lane type designation.
+      - name: lane_type2
+        description: Tertiary lane type designation.
+      - name: open_dates
+        description: Date range when the bus lane opened.
+      - name: lane_width
+        description: Width of the bus lane.
+      - name: lane_color
+        description: Pavement color designation of the bus lane.
+      - name: sbs_route1
+        description: First Select Bus Service route using this lane.
+      - name: sbs_route2
+        description: Second Select Bus Service route using this lane.
+      - name: bltrafdir
+        description: Traffic direction code from the source.
+      - name: rw_type
+        description: Roadway type classification.
+      - name: street_width
+        description: Width of the street (from streetwidt).
+      - name: shape_length
+        description: Shape geometry length (cast to double from shape_leng).
 
   - name: stg_nyc_dot__traffic_volume_counts
-    description: Cleaned NYC DOT traffic volume counts with date and directional attributes.
+    description: >
+      Cleaned NYC DOT traffic volume counts. Source columns use abbreviated names
+      (yr, m, d, hh, mm, vol, fromst, tost, boro) which are expanded to readable
+      names here. A date column is constructed from yr/m/d using make_date().
     columns:
       - name: segment_id
-        description: Segment identifier for the traffic count location.
+        description: Segment identifier for the traffic count location (from segmentid).
         tests:
           - not_null
+      - name: request_id
+        description: DOT request identifier for the count (from requestid).
       - name: street
         description: Street name of the segment.
       - name: from_street
-        description: Starting cross street.
+        description: Starting cross street (from fromst).
       - name: to_street
-        description: Ending cross street.
+        description: Ending cross street (from tost).
       - name: direction
         description: Traffic direction (N, S, E, W).
+      - name: borough
+        description: NYC borough code (from boro).
+      - name: wkt_geom
+        description: Well-Known Text geometry of the segment.
       - name: date
-        description: Date of the traffic count.
+        description: Date of the traffic count, constructed from yr/m/d.
         tests:
           - not_null
+      - name: hour
+        description: Hour of the count interval (from hh).
+      - name: minute
+        description: Minute of the count interval (from mm).
       - name: volume
-        description: Total traffic volume count for the period.
+        description: Total traffic volume count (from vol, cast to bigint).
         tests:
           - not_null

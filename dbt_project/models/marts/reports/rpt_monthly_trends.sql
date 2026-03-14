@@ -1,4 +1,5 @@
 -- Month-over-month speed trends by borough.
+-- NOTE: speed_variability_mph is not available in the source data and is omitted.
 
 with speeds as (
     select * from {{ ref('fct_bus_segment_speeds') }}
@@ -21,10 +22,9 @@ joined as (
         d.month_name,
         d.year_month_key,
         r.borough,
-        round(avg(s.avg_speed_mph), 2)              as avg_speed_mph,
-        round(avg(s.speed_variability_mph), 2)      as avg_variability_mph,
-        sum(s.trip_count)                           as total_trips,
-        count(distinct s.route_id)                  as route_count
+        round(avg(s.avg_speed_mph), 2)  as avg_speed_mph,
+        sum(s.trip_count)               as total_trips,
+        count(distinct s.route_id)      as route_count
     from speeds s
     inner join dates d on s.metric_date = d.date_day
     left join routes r using (route_id)
@@ -63,5 +63,5 @@ with_mom as (
     from joined
 )
 
-select *
+select * from with_mom
 order by borough, year_month_key

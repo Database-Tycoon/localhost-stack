@@ -16,9 +16,11 @@ models:
   - name: sem_bus_segment_speeds
     description: >
       MetricFlow semantic model exposing bus segment speed metrics.
-      Provides the foundation for defining measures (avg speed, trip count)
-      and dimensions (route, segment, time of day) accessible via MetricFlow
-      metric queries.
+      Provides the foundation for defining measures (avg speed, trip count,
+      distance, travel time) and dimensions (route, segment, time of day)
+      accessible via MetricFlow metric queries.
+      NOTE: min_speed_mph, max_speed_mph, median_speed_mph, and speed_variability_mph
+      are not available in the source data and are absent from this model.
     columns:
       - name: segment_speed_key
         description: Surrogate key for the segment speed record.
@@ -45,16 +47,12 @@ models:
         description: Average speed in mph (measure).
         tests:
           - not_null
-      - name: min_speed_mph
-        description: Minimum speed in mph (measure).
-      - name: max_speed_mph
-        description: Maximum speed in mph (measure).
-      - name: median_speed_mph
-        description: Median speed in mph (measure).
-      - name: speed_variability_mph
-        description: Speed variability (max - min) in mph (measure).
       - name: trip_count
         description: Number of trips contributing to the measurement (measure).
+      - name: road_distance_miles
+        description: Road distance of the segment in miles (measure).
+      - name: avg_travel_time_min
+        description: Average travel time for the segment in minutes (measure).
       - name: segment_start
         description: Start location of the segment (dimension).
       - name: segment_end
@@ -96,34 +94,33 @@ semantic_models:
         description: Total number of bus trips.
         agg: sum
         expr: trip_count
-      - name: avg_speed_variability_mph
-        description: Average speed variability in mph.
+      - name: total_road_distance_miles
+        description: Total road distance covered in miles.
+        agg: sum
+        expr: road_distance_miles
+      - name: avg_travel_time_min
+        description: Average segment travel time in minutes.
         agg: average
-        expr: speed_variability_mph
-      - name: min_bus_speed_mph
-        description: Minimum bus speed in mph.
-        agg: min
-        expr: min_speed_mph
-      - name: max_bus_speed_mph
-        description: Maximum bus speed in mph.
-        agg: max
-        expr: max_speed_mph
+        expr: avg_travel_time_min
 
 metrics:
   - name: avg_bus_speed
+    label: Average Bus Speed
     description: Network-wide average bus speed in mph.
     type: simple
     type_params:
       measure: avg_bus_speed_mph
 
   - name: total_bus_trips
+    label: Total Bus Trips
     description: Total number of bus trips across the network.
     type: simple
     type_params:
       measure: total_trip_count
 
-  - name: avg_speed_variability
-    description: Average bus speed variability (reliability indicator).
+  - name: avg_segment_travel_time
+    label: Average Segment Travel Time
+    description: Average travel time per segment in minutes.
     type: simple
     type_params:
-      measure: avg_speed_variability_mph
+      measure: avg_travel_time_min

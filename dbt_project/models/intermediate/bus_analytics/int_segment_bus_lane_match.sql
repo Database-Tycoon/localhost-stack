@@ -2,6 +2,8 @@
 -- Matching is performed on segment_start / segment_end vs street names in the
 -- bus lanes table using case-insensitive string containment as a proxy for
 -- geo-proximity when spatial data is unavailable.
+-- NOTE: The bus lanes source has no from_street/to_street columns; matching
+-- is therefore done on street name only.
 
 with segments as (
     select distinct
@@ -15,8 +17,7 @@ with segments as (
 bus_lanes as (
     select
         street,
-        from_street,
-        to_street,
+        segment_id  as lane_segment_id,
         borough,
         lane_type
     from {{ ref('stg_nyc_dot__bus_lanes') }}
@@ -29,8 +30,6 @@ matched as (
         s.segment_start,
         s.segment_end,
         bl.street       as lane_street,
-        bl.from_street  as lane_from_street,
-        bl.to_street    as lane_to_street,
         bl.borough      as lane_borough,
         bl.lane_type,
         true            as has_bus_lane
@@ -43,7 +42,7 @@ matched as (
             or lower(bl.street) like '%' || lower(s.segment_end) || '%'
         )
     qualify row_number() over (
-        partition by s.segment_id
+        partition by s.segment_id, s.route_id
         order by bl.street
     ) = 1
 ),
@@ -55,13 +54,11 @@ all_segments as (
         s.segment_start,
         s.segment_end,
         m.lane_street,
-        m.lane_from_street,
-        m.lane_to_street,
         m.lane_borough,
         m.lane_type,
         coalesce(m.has_bus_lane, false) as has_bus_lane
     from segments s
-    left join matched m using (segment_id)
+    left join matched m using (segment_id, route_id)
 )
 
 select * from all_segments

@@ -26,7 +26,7 @@ matched as (
     inner join calendar c
         on c.year_number = s.year
         and c.month_number = s.month
-        and c.day_of_week_number = s.day_of_week
+        and c.day_of_week_name = s.day_of_week
     group by s.year, s.month, s.day_of_week
 )
 

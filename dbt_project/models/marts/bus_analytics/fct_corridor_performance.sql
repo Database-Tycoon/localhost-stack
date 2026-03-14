@@ -1,5 +1,7 @@
 -- Corridor-level performance aggregation joining segment speeds with bus lane matches.
 -- Grain: lane_street × metric_date × hour_of_day
+-- NOTE: min_speed_mph, max_speed_mph, and speed_variability_mph are not available
+-- in the source data and are therefore absent from this model.
 
 with speeds as (
     select * from {{ ref('fct_bus_segment_speeds') }}
@@ -22,9 +24,6 @@ joined as (
         lm.has_bus_lane,
 
         avg(s.avg_speed_mph)                as corridor_avg_speed_mph,
-        min(s.min_speed_mph)                as corridor_min_speed_mph,
-        max(s.max_speed_mph)                as corridor_max_speed_mph,
-        avg(s.speed_variability_mph)        as corridor_avg_variability_mph,
         sum(s.trip_count)                   as total_trips,
         count(distinct s.segment_id)        as segment_count,
         count(distinct s.route_id)          as route_count

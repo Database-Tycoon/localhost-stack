@@ -5,21 +5,23 @@ sources:
     database: raw
     schema: raw_mta_bus_speeds
     tables:
-      - name: bus_segment_speeds_2023_2024
-        description: MTA bus segment speeds for 2023 and 2024.
       - name: bus_segment_speeds_2025
-        description: MTA bus segment speeds for 2025.
+        description: >
+          MTA bus segment speeds for 2025. All numeric columns are stored as VARCHAR
+          in the raw source and must be cast in the staging layer.
+        # bus_segment_speeds_2023_2024 is omitted; add it here when the table is loaded.
 
 models:
   - name: stg_mta_bus_speeds__segment_speeds
     description: >
-      Unified staging model for MTA bus segment speeds combining the 2023-2024
-      and 2025 source tables. Deduplication is performed using a surrogate key
-      derived from (route_id, segment_id, year, month, day_of_week, hour_of_day,
-      data_source), preferring the 2025 source when conflicts exist.
+      Staging model for MTA bus segment speeds (2025). Constructs a segment_id from
+      timepoint_stop_id || '-' || next_timepoint_stop_id and casts all numeric VARCHAR
+      columns to appropriate types. Deduplication is performed using a surrogate key
+      derived from (route_id, segment_id, year, month, day_of_week, hour_of_day),
+      keeping the most recent row by timestamp when duplicates exist.
     columns:
       - name: segment_speed_id
-        description: MD5 surrogate key for the segment speed record.
+        description: MD5 surrogate key derived from route_id, segment_id, year, month, day_of_week, hour_of_day.
         tests:
           - not_null
           - unique
@@ -28,49 +30,64 @@ models:
         tests:
           - not_null
       - name: segment_id
-        description: Segment identifier along the route.
+        description: Constructed segment identifier (timepoint_stop_id || '-' || next_timepoint_stop_id).
         tests:
           - not_null
+      - name: timepoint_stop_id
+        description: Identifier of the starting timepoint stop for the segment.
+      - name: segment_start
+        description: Name of the starting timepoint stop (aliased from timepoint_stop_name).
+      - name: timepoint_stop_latitude
+        description: Latitude of the starting timepoint stop (VARCHAR from source).
+      - name: timepoint_stop_longitude
+        description: Longitude of the starting timepoint stop (VARCHAR from source).
+      - name: next_timepoint_stop_id
+        description: Identifier of the ending timepoint stop for the segment.
+      - name: segment_end
+        description: Name of the ending timepoint stop (aliased from next_timepoint_stop_name).
+      - name: next_timepoint_stop_latitude
+        description: Latitude of the ending timepoint stop (VARCHAR from source).
+      - name: next_timepoint_stop_longitude
+        description: Longitude of the ending timepoint stop (VARCHAR from source).
+      - name: direction
+        description: Direction of travel for the route segment.
+      - name: borough
+        description: NYC borough where the segment is located.
+      - name: route_type
+        description: Classification of the route type.
+      - name: stop_order
+        description: Ordering of the stop within the route.
       - name: year
-        description: Year of observation.
+        description: Year of observation (VARCHAR from source).
         tests:
           - not_null
       - name: month
-        description: Month of observation (1-12).
+        description: Month of observation (VARCHAR from source).
         tests:
           - not_null
-          - accepted_values:
-              values: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
       - name: day_of_week
-        description: Day of week (0=Monday, 6=Sunday or source convention).
+        description: Day of week as reported in the source.
         tests:
           - not_null
       - name: hour_of_day
-        description: Hour of day (0-23).
+        description: Hour of day as reported in the source.
         tests:
           - not_null
-          - accepted_values:
-              values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
-                       13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+      - name: road_distance_miles
+        description: Road distance of the segment in miles (cast from VARCHAR).
+      - name: avg_travel_time_min
+        description: Average travel time for the segment in minutes (cast from VARCHAR).
       - name: avg_speed_mph
-        description: Average speed in miles per hour.
+        description: Average road speed in mph (cast from average_road_speed VARCHAR).
         tests:
           - not_null
-      - name: min_speed_mph
-        description: Minimum observed speed in miles per hour.
-      - name: max_speed_mph
-        description: Maximum observed speed in miles per hour.
-      - name: median_speed_mph
-        description: Median speed in miles per hour.
-      - name: number_of_trips
-        description: Number of trips contributing to the speed measurement.
-      - name: segment_start
-        description: Start location of the segment.
-      - name: segment_end
-        description: End location of the segment.
+      - name: trip_count
+        description: Number of bus trips contributing to the speed measurement (cast from bus_trip_count VARCHAR).
+      - name: timestamp
+        description: Source timestamp with time zone for the observation.
       - name: data_source
-        description: Source dataset identifier ('2023_2024' or '2025').
+        description: Source dataset identifier (always '2025' for current data).
         tests:
           - not_null
           - accepted_values:
-              values: ['2023_2024', '2025']
+              values: ['2025']

@@ -107,10 +107,12 @@ models:
         description: End location of the segment.
 
   - name: dim_bus_lanes
-    description: NYC DOT bus lane corridor dimension.
+    description: >
+      NYC DOT bus lane corridor dimension. The source data has no from_street or
+      to_street columns; the surrogate key is derived from street + segment_id + borough.
     columns:
       - name: bus_lane_key
-        description: MD5 surrogate key derived from street + cross streets + borough.
+        description: MD5 surrogate key derived from street + segment_id + borough.
         tests:
           - not_null
           - unique
@@ -118,11 +120,23 @@ models:
         description: Street where the bus lane is located.
         tests:
           - not_null
+      - name: segment_id
+        description: DOT segment identifier for the bus lane corridor.
       - name: borough
-        description: NYC borough.
+        description: NYC borough code.
         tests:
           - not_null
       - name: lane_type
-        description: Type of bus lane designation.
-        tests:
-          - not_null
+        description: Primary type of bus lane designation.
+      - name: facility
+        description: Facility name or description for the bus lane corridor.
+      - name: direction
+        description: Traffic direction the bus lane applies to.
+      - name: hours
+        description: Hours during which the bus lane is in effect.
+      - name: days
+        description: Days during which the bus lane is in effect.
+      - name: sbs_route1
+        description: First Select Bus Service route using this lane.
+      - name: sbs_route2
+        description: Second Select Bus Service route using this lane.

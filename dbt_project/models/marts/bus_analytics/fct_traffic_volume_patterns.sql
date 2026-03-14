@@ -39,6 +39,7 @@ with_key as (
     select
         md5(
             coalesce(cast(segment_id as varchar), '') || '|' ||
+            coalesce(street, '') || '|' ||
             coalesce(cast(date as varchar), '') || '|' ||
             coalesce(time_period, '') || '|' ||
             coalesce(direction, '')

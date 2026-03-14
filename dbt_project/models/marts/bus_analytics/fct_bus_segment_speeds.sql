@@ -1,6 +1,8 @@
 -- Central fact table for bus segment speeds.
 -- Grain: route_id × segment_id × metric_date × hour_of_day
 -- Joins staging speeds with representative dates to produce a date-based fact.
+-- NOTE: min_speed_mph, max_speed_mph, median_speed_mph, and speed_variability_mph
+-- are not available in the source data and are therefore absent from this model.
 
 with speeds as (
     select * from {{ ref('stg_mta_bus_speeds__segment_speeds') }}
@@ -32,15 +34,16 @@ joined as (
 
         -- Measures
         s.avg_speed_mph,
-        s.min_speed_mph,
-        s.max_speed_mph,
-        s.median_speed_mph,
-        round(s.max_speed_mph - s.min_speed_mph, 2)  as speed_variability_mph,
-        s.number_of_trips                             as trip_count,
+        s.trip_count,
+        s.road_distance_miles,
+        s.avg_travel_time_min,
 
         -- Descriptive
         s.segment_start,
-        s.segment_end
+        s.segment_end,
+        s.direction,
+        s.borough,
+        s.route_type
     from speeds s
     left join rep_dates rd
         on  s.year        = rd.year

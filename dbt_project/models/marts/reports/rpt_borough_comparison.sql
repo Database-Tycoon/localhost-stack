@@ -1,4 +1,6 @@
 -- Borough-level speed and reliability aggregation.
+-- NOTE: min_speed_mph, max_speed_mph, and speed_variability_mph are not available
+-- in the source data and are omitted.
 
 with route_perf as (
     select * from {{ ref('fct_route_daily_performance') }}
@@ -7,13 +9,10 @@ with route_perf as (
 by_borough as (
     select
         borough,
-        round(avg(route_avg_speed_mph), 2)          as avg_speed_mph,
-        round(min(route_min_speed_mph), 2)           as min_speed_mph,
-        round(max(route_max_speed_mph), 2)           as max_speed_mph,
-        round(avg(avg_speed_variability_mph), 2)    as avg_variability_mph,
-        sum(total_trips)                            as total_trips,
-        count(distinct route_id)                    as route_count,
-        count(distinct metric_date)                 as observation_days,
+        round(avg(route_avg_speed_mph), 2)  as avg_speed_mph,
+        sum(total_trips)                    as total_trips,
+        count(distinct route_id)            as route_count,
+        count(distinct metric_date)         as observation_days,
 
         -- Grade distribution
         round(

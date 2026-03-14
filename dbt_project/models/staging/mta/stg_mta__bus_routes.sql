@@ -12,6 +12,7 @@ cleaned as (
         cast(route_text_color as varchar) as route_text_color
     from source
     where route_id is not null
+    qualify row_number() over (partition by route_id order by route_id) = 1
 )
 
 select * from cleaned

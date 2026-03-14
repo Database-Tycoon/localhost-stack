@@ -1,5 +1,6 @@
 -- Compare average bus speeds on segments with bus lanes vs without.
 -- Quantifies the speed benefit of bus lane infrastructure.
+-- NOTE: speed_variability_mph is not available in the source data and is omitted.
 
 with speeds as (
     select * from {{ ref('fct_segment_speeds_hourly') }}
@@ -16,10 +17,9 @@ joined as (
         s.hour_of_day,
         lm.has_bus_lane,
         lm.lane_type,
-        round(avg(s.avg_speed_mph), 2)              as avg_speed_mph,
-        round(avg(s.speed_variability_mph), 2)      as avg_variability_mph,
-        count(distinct s.segment_id)                as segment_count,
-        sum(s.trip_count)                           as total_trips
+        round(avg(s.avg_speed_mph), 2)  as avg_speed_mph,
+        count(distinct s.segment_id)    as segment_count,
+        sum(s.trip_count)               as total_trips
     from speeds s
     inner join lane_match lm using (segment_id)
     group by

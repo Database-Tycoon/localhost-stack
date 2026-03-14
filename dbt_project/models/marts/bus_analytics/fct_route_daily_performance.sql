@@ -1,6 +1,8 @@
 -- Route-level daily performance aggregation.
 -- Grain: route_id × metric_date
--- Includes reliability grade derived from speed variability.
+-- NOTE: min_speed_mph, max_speed_mph, median_speed_mph, and speed_variability_mph
+-- are not available in the source data. Reliability grade is based on average
+-- speed across the route (higher avg speed = better grade).
 
 with segment_speeds as (
     select * from {{ ref('fct_bus_segment_speeds') }}
@@ -20,10 +22,6 @@ aggregated as (
         s.day_of_week,
 
         avg(s.avg_speed_mph)            as route_avg_speed_mph,
-        min(s.min_speed_mph)            as route_min_speed_mph,
-        max(s.max_speed_mph)            as route_max_speed_mph,
-        avg(s.median_speed_mph)         as route_median_speed_mph,
-        avg(s.speed_variability_mph)    as avg_speed_variability_mph,
         sum(s.trip_count)               as total_trips,
         count(distinct s.segment_id)    as segment_count
     from segment_speeds s
@@ -48,20 +46,17 @@ with_grade as (
         month,
         day_of_week,
         route_avg_speed_mph,
-        route_min_speed_mph,
-        route_max_speed_mph,
-        route_median_speed_mph,
-        avg_speed_variability_mph,
         total_trips,
         segment_count,
 
-        -- Reliability grade: lower variability = better grade
+        -- Reliability grade based on average speed:
+        -- faster average speed indicates more reliable / unimpeded service
         case
-            when avg_speed_variability_mph < 3  then 'A'
-            when avg_speed_variability_mph < 6  then 'B'
-            when avg_speed_variability_mph < 10 then 'C'
-            when avg_speed_variability_mph < 15 then 'D'
-            else                                     'F'
+            when route_avg_speed_mph >= 12 then 'A'
+            when route_avg_speed_mph >= 9  then 'B'
+            when route_avg_speed_mph >= 6  then 'C'
+            when route_avg_speed_mph >= 4  then 'D'
+            else                                'F'
         end as reliability_grade
     from aggregated
 )

@@ -1,4 +1,5 @@
 -- Weekend vs weekday speed comparison by route and borough.
+-- NOTE: speed_variability_mph is not available in the source data and is omitted.
 
 with speeds as (
     select * from {{ ref('fct_bus_segment_speeds') }}
@@ -21,7 +22,6 @@ joined as (
         r.borough,
         case when d.is_weekend then 'Weekend' else 'Weekday' end as day_type,
         s.avg_speed_mph,
-        s.speed_variability_mph,
         s.trip_count
     from speeds s
     left join dates d on s.metric_date = d.date_day
@@ -34,9 +34,8 @@ aggregated as (
         route_short_name,
         borough,
         day_type,
-        round(avg(avg_speed_mph), 2)            as avg_speed_mph,
-        round(avg(speed_variability_mph), 2)    as avg_variability_mph,
-        sum(trip_count)                         as total_trips
+        round(avg(avg_speed_mph), 2)    as avg_speed_mph,
+        sum(trip_count)                 as total_trips
     from joined
     where day_type is not null
     group by route_id, route_short_name, borough, day_type
@@ -47,12 +46,10 @@ pivoted as (
         route_id,
         route_short_name,
         borough,
-        max(case when day_type = 'Weekday' then avg_speed_mph end)      as weekday_avg_speed_mph,
-        max(case when day_type = 'Weekend' then avg_speed_mph end)       as weekend_avg_speed_mph,
-        max(case when day_type = 'Weekday' then avg_variability_mph end) as weekday_avg_variability_mph,
-        max(case when day_type = 'Weekend' then avg_variability_mph end) as weekend_avg_variability_mph,
-        max(case when day_type = 'Weekday' then total_trips end)         as weekday_total_trips,
-        max(case when day_type = 'Weekend' then total_trips end)         as weekend_total_trips
+        max(case when day_type = 'Weekday' then avg_speed_mph end)  as weekday_avg_speed_mph,
+        max(case when day_type = 'Weekend' then avg_speed_mph end)  as weekend_avg_speed_mph,
+        max(case when day_type = 'Weekday' then total_trips end)    as weekday_total_trips,
+        max(case when day_type = 'Weekend' then total_trips end)    as weekend_total_trips
     from aggregated
     group by route_id, route_short_name, borough
 )

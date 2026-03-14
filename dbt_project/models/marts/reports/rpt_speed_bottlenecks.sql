@@ -11,11 +11,10 @@ segment_summary as (
         segment_start,
         segment_end,
         time_period,
-        round(avg(avg_speed_mph), 2)            as avg_speed_mph,
-        round(avg(speed_variability_mph), 2)    as avg_variability_mph,
-        sum(trip_count)                         as total_trips,
-        count(distinct route_id)                as route_count,
-        count(distinct metric_date)             as observation_days
+        round(avg(avg_speed_mph), 2)    as avg_speed_mph,
+        sum(trip_count)                 as total_trips,
+        count(distinct route_id)        as route_count,
+        count(distinct metric_date)     as observation_days
     from speeds
     group by
         segment_id,

@@ -10,11 +10,11 @@ DATASET_TRAFFIC_VOLUME = "7ym2-wayt"
 MTA_GTFS_BASE_URL = "https://rrgtfsfeeds.s3.amazonaws.com"
 MTA_GTFS_FEEDS = {
     "bronx": f"{MTA_GTFS_BASE_URL}/gtfs_bx.zip",
-    "brooklyn": f"{MTA_GTFS_BASE_URL}/gtfs_bk.zip",
-    "manhattan": f"{MTA_GTFS_BASE_URL}/gtfs_mn.zip",
+    "brooklyn": f"{MTA_GTFS_BASE_URL}/gtfs_b.zip",
+    "manhattan": f"{MTA_GTFS_BASE_URL}/gtfs_m.zip",
     "queens": f"{MTA_GTFS_BASE_URL}/gtfs_q.zip",
     "staten_island": f"{MTA_GTFS_BASE_URL}/gtfs_si.zip",
-    "mta_bus": f"{MTA_GTFS_BASE_URL}/gtfs_bus.zip",
+    "mta_bus": f"{MTA_GTFS_BASE_URL}/gtfs_busco.zip",
 }
 
 # MTA Bus Speeds datasets (data.ny.gov)

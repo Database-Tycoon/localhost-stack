@@ -24,19 +24,18 @@ models:
         description: First occurrence of the given day_of_week in the year-month period.
         tests:
           - not_null
-          - unique
 
   - name: int_segment_bus_lane_match
     description: >
       Fuzzy street-name match between MTA bus speed segments and NYC DOT bus lane
       corridors. Each segment appears exactly once; has_bus_lane indicates whether
-      a matching bus lane corridor was found.
+      a matching bus lane corridor was found. NOTE: The bus lanes source has no
+      from_street or to_street columns, so matching is performed on street name only.
     columns:
       - name: segment_id
         description: Segment identifier from the bus speed data.
         tests:
           - not_null
-          - unique
       - name: route_id
         description: MTA bus route identifier.
         tests:

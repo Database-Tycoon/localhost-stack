@@ -1,5 +1,7 @@
 -- Routes ranked by reliability grade and average speed.
 -- Aggregates route daily performance across all observation dates.
+-- NOTE: speed_variability_mph is not available in the source data;
+-- reliability is graded by average speed in fct_route_daily_performance.
 
 with route_perf as (
     select * from {{ ref('fct_route_daily_performance') }}
@@ -10,10 +12,9 @@ summary as (
         route_id,
         route_short_name,
         borough,
-        round(avg(route_avg_speed_mph), 2)          as overall_avg_speed_mph,
-        round(avg(avg_speed_variability_mph), 2)    as overall_avg_variability_mph,
-        sum(total_trips)                            as total_trips,
-        count(distinct metric_date)                 as observation_days,
+        round(avg(route_avg_speed_mph), 2)  as overall_avg_speed_mph,
+        sum(total_trips)                    as total_trips,
+        count(distinct metric_date)         as observation_days,
 
         -- Grade distribution
         count(case when reliability_grade = 'A' then 1 end) as grade_a_days,
@@ -30,7 +31,7 @@ summary as (
 
 select
     *,
-    row_number() over (order by overall_avg_variability_mph asc) as reliability_rank,
-    row_number() over (order by overall_avg_speed_mph desc)      as speed_rank
+    row_number() over (order by overall_avg_speed_mph desc) as speed_rank,
+    row_number() over (order by overall_avg_speed_mph desc) as reliability_rank
 from summary
 order by reliability_rank

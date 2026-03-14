@@ -56,7 +56,9 @@ models:
   - name: fct_bus_segment_speeds
     description: >
       Central fact table at the route × segment × representative_date × hour grain.
-      Speed measures include average, min, max, median, and variability (max-min).
+      Speed measures include average speed and trip count. min_speed_mph, max_speed_mph,
+      median_speed_mph, and speed_variability_mph are not available in the source data.
+      Also includes road_distance_miles and avg_travel_time_min from the source.
     columns:
       - name: segment_speed_key
         description: MD5 surrogate key.
@@ -68,24 +70,35 @@ models:
         tests:
           - not_null
       - name: segment_id
-        description: Segment identifier.
+        description: Segment identifier (timepoint_stop_id || '-' || next_timepoint_stop_id).
         tests:
           - not_null
       - name: metric_date
         description: Representative calendar date for (year, month, day_of_week).
       - name: avg_speed_mph
-        description: Average speed in mph.
+        description: Average speed in mph (cast from average_road_speed).
         tests:
           - not_null
-      - name: speed_variability_mph
-        description: Difference between max and min speed in mph.
       - name: trip_count
-        description: Number of trips contributing to the measurement.
+        description: Number of trips contributing to the measurement (from bus_trip_count).
+      - name: road_distance_miles
+        description: Road distance of the segment in miles.
+      - name: avg_travel_time_min
+        description: Average travel time for the segment in minutes.
+      - name: segment_start
+        description: Starting timepoint stop name.
+      - name: segment_end
+        description: Ending timepoint stop name.
+      - name: direction
+        description: Direction of travel.
+      - name: borough
+        description: NYC borough where the segment is located.
 
   - name: fct_route_daily_performance
     description: >
       Route-level daily aggregation with reliability grades (A-F) based on
-      average speed variability across all segments.
+      average speed across all segments. Grade thresholds: A>=12mph, B>=9mph,
+      C>=6mph, D>=4mph, F<4mph.
     columns:
       - name: route_daily_key
         description: MD5 surrogate key.
@@ -99,7 +112,7 @@ models:
       - name: metric_date
         description: Representative calendar date.
       - name: reliability_grade
-        description: Letter grade A-F based on speed variability (A=most reliable).
+        description: Letter grade A-F based on average speed (A=fastest/most reliable).
         tests:
           - not_null
           - accepted_values:
@@ -115,6 +128,8 @@ models:
     description: >
       Corridor-level performance aggregation for segments matched to bus lane corridors.
       Grain: corridor_street × metric_date × hour_of_day.
+      NOTE: corridor_min_speed_mph, corridor_max_speed_mph, and corridor_avg_variability_mph
+      are not available in the source data and are absent.
     columns:
       - name: corridor_performance_key
         description: MD5 surrogate key.
@@ -165,6 +180,8 @@ models:
     description: >
       Hourly grain fact table enriched with time-of-day attributes (period name,
       peak flag, hour label) to simplify hourly analyses without extra joins.
+      NOTE: min_speed_mph, max_speed_mph, median_speed_mph, and speed_variability_mph
+      are not available in the source data and are absent.
     columns:
       - name: segment_speed_key
         description: Surrogate key from fct_bus_segment_speeds.
