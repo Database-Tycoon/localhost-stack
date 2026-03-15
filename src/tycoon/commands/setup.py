@@ -68,54 +68,45 @@ def setup_cmd(
         if remove_wal(db_path):
             warn(f"Removed stale WAL file for {label} database")
 
-    # 3. Ingestion
     tycoon_bin = [sys.executable, "-m", "tycoon"]
 
+    # 3. Ingestion
     if not skip_ingest:
-        # Build shared ingest flags
-        ingest_flags: list[str] = []
-        bus_speeds_flags: list[str] = []
+        if not config.has_project_file or not config.sources:
+            error("No tycoon.yml or no sources registered. Run 'tycoon init' and 'tycoon sources add' first.")
+            raise typer.Exit(1)
 
+        sources = config.sources
+        total = len(sources)
+        ingest_flags: list[str] = []
         if quick:
             ingest_flags = ["--max-records", "5000"]
-            bus_speeds_flags = ["--max-records", "5000", "--skip-2023-2024"]
 
-        # 3a. DOT ingestion
-        console.rule("[bold cyan]Step 1/3 — NYC DOT Ingestion")
-        _run(
-            [*tycoon_bin, "ingest", "dot", *ingest_flags],
-            "NYC DOT ingestion",
-        )
-
-        # 3b. MTA ingestion
-        console.rule("[bold cyan]Step 2/3 — MTA GTFS Ingestion")
-        _run(
-            [*tycoon_bin, "ingest", "mta", *ingest_flags],
-            "MTA GTFS ingestion",
-        )
-
-        # 3c. Bus Speeds ingestion
-        console.rule("[bold cyan]Step 3/3 — MTA Bus Speeds Ingestion")
-        _run(
-            [*tycoon_bin, "ingest", "bus-speeds", *(bus_speeds_flags or ingest_flags)],
-            "MTA Bus Speeds ingestion",
-        )
+        for i, name in enumerate(sources, 1):
+            console.rule(f"[bold cyan]Step {i}/{total} — {name}")
+            _run(
+                [*tycoon_bin, "ingest", "run", name, *ingest_flags],
+                f"{name} ingestion",
+            )
     else:
         info("Skipping ingestion (--skip-ingest)")
 
     # 4. dbt build
-    console.rule("[bold cyan]dbt Build")
-    _run(
-        [
-            "dbt",
-            "build",
-            "--project-dir",
-            str(config.dbt_project_dir),
-            "--profiles-dir",
-            str(config.dbt_project_dir),
-        ],
-        "dbt build",
-    )
+    if config.dbt_project_dir.exists():
+        console.rule("[bold cyan]dbt Build")
+        _run(
+            [
+                "dbt",
+                "build",
+                "--project-dir",
+                str(config.dbt_project_dir),
+                "--profiles-dir",
+                str(config.dbt_project_dir),
+            ],
+            "dbt build",
+        )
+    else:
+        info("No dbt project found, skipping transform step.")
 
     # 5. Summary
     elapsed = time.time() - start

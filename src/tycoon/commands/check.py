@@ -23,12 +23,17 @@ def check(
     rows: list[tuple[str, str, str]] = []
     issues = 0
 
+    # -- Project config --
+    if config.has_project_file:
+        rows.append(("Project config", "OK", f"tycoon.yml ({config.project.name})"))
+    else:
+        rows.append(("Project config", "WARN", "no tycoon.yml — run tycoon init"))
+
     # -- Project root --
     if (config.root / "pyproject.toml").exists():
         rows.append(("Project root", "OK", str(config.root)))
     else:
-        rows.append(("Project root", "FAIL", "pyproject.toml not found"))
-        issues += 1
+        rows.append(("Project root", "WARN", "no pyproject.toml"))
 
     # -- Data directory --
     if config.data_dir.exists():
@@ -39,6 +44,16 @@ def check(
             rows.append(("Data directory", "OK", "created"))
         else:
             rows.append(("Data directory", "WARN", "missing (run tycoon setup or --fix)"))
+
+    # -- Registered sources --
+    sources = config.sources
+    if sources:
+        rows.append(("Sources", "OK", f"{len(sources)} registered"))
+        if verbose:
+            for name, src in sources.items():
+                rows.append((f"  {name}", "OK", f"{src.type} → {src.schema_name}"))
+    else:
+        rows.append(("Sources", "WARN", "none registered — run tycoon sources add"))
 
     # -- Raw database --
     raw_size = db_file_size_mb(config.raw_db)
@@ -51,16 +66,16 @@ def check(
     else:
         rows.append(("Raw database", "WARN", "not found — run tycoon ingest"))
 
-    # -- Local (transformed) database --
+    # -- Warehouse (transformed) database --
     local_size = db_file_size_mb(config.local_db)
     if local_size is not None:
-        rows.append(("Local database", "OK", f"{local_size:.1f} MB"))
+        rows.append(("Warehouse database", "OK", f"{local_size:.1f} MB"))
         if verbose:
             for schema, table in get_tables(config.local_db):
                 count = get_row_count(config.local_db, schema, table)
                 rows.append((f"  {schema}.{table}", "OK", f"{count:,} rows" if count else "empty"))
     else:
-        rows.append(("Local database", "WARN", "not found — run tycoon transform build"))
+        rows.append(("Warehouse database", "WARN", "not found — run tycoon transform build"))
 
     # -- Port availability --
     for name, port in PORTS.items():

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 import uuid
 from pathlib import Path
 
@@ -48,9 +49,20 @@ def _db_info(db_path: Path) -> dict:
     }
 
 
+def _sources_info() -> dict:
+    """Return registered source metadata."""
+    return {
+        name: {
+            "type": src.type,
+            "schema": src.schema_name,
+        }
+        for name, src in config.sources.items()
+    }
+
+
 @router.get("/status")
 async def status() -> dict:
-    """Live status of services, databases, and dbt results."""
+    """Live status of services, databases, sources, and dbt results."""
     services = {}
     for name, port in PORTS.items():
         services[name] = {
@@ -64,6 +76,8 @@ async def status() -> dict:
     }
 
     return {
+        "project": config.project.name if config.has_project_file else None,
+        "sources": _sources_info(),
         "services": services,
         "databases": databases,
         "dbt": _dbt_run_results(),
@@ -72,29 +86,31 @@ async def status() -> dict:
     }
 
 
-@router.post("/run/pipeline/{pipeline_id}")
-async def run_pipeline(pipeline_id: str) -> dict:
-    """Spawn a dlt pipeline subprocess."""
+@router.post("/run/pipeline/{source_name}")
+async def run_pipeline(source_name: str) -> dict:
+    """Spawn an ingestion pipeline for a registered source."""
     if subprocess_manager.is_busy():
         raise HTTPException(
             status_code=409,
             detail=f"Another run is active: {subprocess_manager.active_run_id}",
         )
 
-    run_id = f"pipeline-{pipeline_id}-{uuid.uuid4().hex[:8]}"
-    cmd = [
-        "dlt",
-        "pipeline",
-        pipeline_id,
-        "run",
-    ]
+    # Validate source exists
+    if source_name not in config.sources:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Source '{source_name}' not found. Registered: {list(config.sources.keys())}",
+        )
+
+    run_id = f"pipeline-{source_name}-{uuid.uuid4().hex[:8]}"
+    cmd = [sys.executable, "-m", "tycoon", "ingest", "run", source_name]
 
     try:
         await subprocess_manager.start_run(run_id, cmd)
     except RuntimeError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
-    return {"run_id": run_id, "cmd": cmd}
+    return {"run_id": run_id, "source": source_name, "cmd": cmd}
 
 
 @router.post("/run/dbt")

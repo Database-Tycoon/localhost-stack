@@ -9,12 +9,12 @@ import dlt
 import httpx
 
 from tycoon.config import config
-from tycoon.constants import (
-    DATASET_BUS_SPEEDS_2023_2024,
-    DATASET_BUS_SPEEDS_2025,
-    MTA_BUS_SPEEDS_DOMAIN,
-    SOCRATA_PAGE_SIZE,
-)
+
+# MTA Bus Speeds dataset constants (NY State Socrata)
+MTA_BUS_SPEEDS_DOMAIN = "data.ny.gov"
+DATASET_BUS_SPEEDS_2023_2024 = "58t6-89vi"
+DATASET_BUS_SPEEDS_2025 = "kufs-yh3x"
+SOCRATA_PAGE_SIZE = 50_000
 
 
 def _socrata_pages(

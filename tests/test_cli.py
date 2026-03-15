@@ -33,7 +33,7 @@ class TestCLIHelp:
         result = cli_runner.invoke(app, ["ingest", "--help"])
         assert result.exit_code == 0
         output = result.stdout
-        for sub in ("dot", "mta", "bus-speeds", "all"):
+        for sub in ("run", "all"):
             assert sub in output, f"Expected ingest subcommand '{sub}' in help output"
 
     def test_transform_help_lists_subcommands(self, cli_runner):

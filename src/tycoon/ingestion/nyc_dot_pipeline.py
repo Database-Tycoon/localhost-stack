@@ -9,13 +9,13 @@ import dlt
 import httpx
 
 from tycoon.config import config
-from tycoon.constants import (
-    DATASET_BUS_LANES,
-    DATASET_TRAFFIC_SPEEDS,
-    DATASET_TRAFFIC_VOLUME,
-    NYC_DOT_DOMAIN,
-    SOCRATA_PAGE_SIZE,
-)
+
+# NYC DOT dataset constants (Socrata)
+NYC_DOT_DOMAIN = "data.cityofnewyork.us"
+DATASET_TRAFFIC_SPEEDS = "i4gi-tjb9"
+DATASET_BUS_LANES = "ycrg-ses3"
+DATASET_TRAFFIC_VOLUME = "7ym2-wayt"
+SOCRATA_PAGE_SIZE = 50_000
 
 
 def _socrata_pages(

@@ -1,0 +1,86 @@
+"""Pydantic models for tycoon.yml project configuration."""
+
+from __future__ import annotations
+
+import os
+import re
+from pathlib import Path
+from typing import Any
+
+import yaml
+from pydantic import BaseModel, Field
+
+
+def _interpolate_env(value: str) -> str:
+    """Replace ${ENV_VAR} and ${ENV_VAR:-default} patterns with env values."""
+    def _replace(match: re.Match) -> str:
+        var = match.group(1)
+        if ":-" in var:
+            name, default = var.split(":-", 1)
+            return os.environ.get(name, default)
+        return os.environ.get(var, match.group(0))
+
+    return re.sub(r"\$\{([^}]+)}", _replace, value)
+
+
+def _interpolate_recursive(obj: Any) -> Any:
+    """Recursively interpolate env vars in strings throughout a data structure."""
+    if isinstance(obj, str):
+        return _interpolate_env(obj)
+    if isinstance(obj, dict):
+        return {k: _interpolate_recursive(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_interpolate_recursive(v) for v in obj]
+    return obj
+
+
+class SourceConfig(BaseModel):
+    """Configuration for a registered data source."""
+
+    type: str = Field(description="dlt source type (e.g. rest_api, sql_database, filesystem)")
+    config: dict[str, Any] = Field(default_factory=dict, description="Config passed to dlt source")
+    schema_name: str = Field(alias="schema", description="Target schema in raw database")
+    tables: list[str] | None = Field(default=None, description="Optional table filter")
+    dbt_package: str | None = Field(default=None, description="Optional dbt hub package name")
+
+    model_config = {"populate_by_name": True}
+
+
+class DatabaseConfig(BaseModel):
+    """Database file paths (relative to project root)."""
+
+    raw: str = Field(default="data/raw.duckdb", description="Raw ingestion database")
+    warehouse: str = Field(default="data/warehouse.duckdb", description="Transformed warehouse database")
+
+
+class TycoonProject(BaseModel):
+    """Top-level tycoon.yml schema."""
+
+    name: str = Field(default="my-project", description="Project name")
+    version: str = Field(default="0.1.0", description="Project version")
+    database: DatabaseConfig = Field(default_factory=DatabaseConfig)
+    sources: dict[str, SourceConfig] = Field(default_factory=dict, description="Registered data sources")
+    dbt_project_dir: str = Field(default="dbt_project", description="Path to dbt project")
+    rill_dir: str = Field(default="rill", description="Path to Rill dashboards")
+
+
+PROJECT_FILENAME = "tycoon.yml"
+
+
+def load_project(project_root: Path) -> TycoonProject | None:
+    """Load and validate tycoon.yml from the given root. Returns None if not found."""
+    path = project_root / PROJECT_FILENAME
+    if not path.exists():
+        return None
+    raw = yaml.safe_load(path.read_text())
+    if raw is None:
+        return TycoonProject()
+    raw = _interpolate_recursive(raw)
+    return TycoonProject.model_validate(raw)
+
+
+def save_project(project: TycoonProject, project_root: Path) -> None:
+    """Write tycoon.yml to disk."""
+    path = project_root / PROJECT_FILENAME
+    data = project.model_dump(by_alias=True, exclude_none=True)
+    path.write_text(yaml.dump(data, default_flow_style=False, sort_keys=False))
