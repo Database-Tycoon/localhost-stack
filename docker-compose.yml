@@ -1,0 +1,217 @@
+services:
+  # ============================================================
+  # POSTGRES — Shared database for Dagster + OpenMetadata
+  # ============================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: tycoon-postgres
+    environment:
+      POSTGRES_USER: tycoon
+      POSTGRES_PASSWORD: tycoon
+      POSTGRES_DB: tycoon
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./docker/init-postgres.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tycoon"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - tycoon-net
+
+  # ============================================================
+  # TYCOON — FastAPI dashboard
+  # ============================================================
+  tycoon:
+    build: .
+    container_name: tycoon
+    ports:
+      - "8888:8888"
+    volumes:
+      - tycoon-data:/app/data
+      - ./dbt_project:/app/dbt_project
+      - ./rill:/app/rill
+      - ./tycoon.yml:/app/tycoon.yml:ro
+    environment:
+      - TYCOON_DOCKER=1
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tycoon-net
+
+  # ============================================================
+  # DAGSTER — Orchestration
+  # ============================================================
+  dagster-user-code:
+    build: .
+    container_name: dagster-user-code
+    command:
+      - dagster
+      - code-server
+      - start
+      - "-h"
+      - "0.0.0.0"
+      - "-p"
+      - "4000"
+      - "-m"
+      - dagster_pipeline.definitions
+    volumes:
+      - tycoon-data:/app/data
+      - ./dbt_project:/app/dbt_project
+      - ./tycoon.yml:/app/tycoon.yml:ro
+      - ./dagster_pipeline:/app/dagster_pipeline
+    environment:
+      DAGSTER_POSTGRES_HOST: postgres
+      DAGSTER_POSTGRES_USER: tycoon
+      DAGSTER_POSTGRES_PASSWORD: tycoon
+      DAGSTER_POSTGRES_DB: dagster
+      DAGSTER_CURRENT_IMAGE: tycoon-dagster-user-code
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tycoon-net
+
+  dagster-webserver:
+    build: .
+    container_name: dagster-webserver
+    command:
+      - dagster-webserver
+      - "-h"
+      - "0.0.0.0"
+      - "-p"
+      - "3000"
+      - "-w"
+      - workspace.yaml
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./workspace.yaml:/app/workspace.yaml:ro
+      - ./dagster.yaml:/app/dagster.yaml:ro
+    environment:
+      DAGSTER_HOME: /app
+      DAGSTER_POSTGRES_HOST: postgres
+      DAGSTER_POSTGRES_USER: tycoon
+      DAGSTER_POSTGRES_PASSWORD: tycoon
+      DAGSTER_POSTGRES_DB: dagster
+    depends_on:
+      postgres:
+        condition: service_healthy
+      dagster-user-code:
+        condition: service_started
+    networks:
+      - tycoon-net
+
+  dagster-daemon:
+    build: .
+    container_name: dagster-daemon
+    command:
+      - dagster-daemon
+      - run
+    volumes:
+      - ./workspace.yaml:/app/workspace.yaml:ro
+      - ./dagster.yaml:/app/dagster.yaml:ro
+    environment:
+      DAGSTER_HOME: /app
+      DAGSTER_POSTGRES_HOST: postgres
+      DAGSTER_POSTGRES_USER: tycoon
+      DAGSTER_POSTGRES_PASSWORD: tycoon
+      DAGSTER_POSTGRES_DB: dagster
+    depends_on:
+      postgres:
+        condition: service_healthy
+      dagster-user-code:
+        condition: service_started
+    networks:
+      - tycoon-net
+
+  # ============================================================
+  # OPENMETADATA — Data Catalog & Governance
+  # ============================================================
+  openmetadata-elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.2
+    container_name: openmetadata-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    volumes:
+      - om-es-data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - tycoon-net
+
+  openmetadata-server:
+    image: docker.getcollate.io/openmetadata/server:1.6.1
+    container_name: openmetadata-server
+    ports:
+      - "8585:8585"
+    environment:
+      # Database — Postgres
+      DB_DRIVER_CLASS: org.postgresql.Driver
+      DB_SCHEME: postgresql
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: tycoon
+      DB_USER_PASSWORD: tycoon
+      OM_DATABASE: openmetadata
+      # Elasticsearch
+      SEARCH_TYPE: elasticsearch
+      ELASTICSEARCH_HOST: openmetadata-elasticsearch
+      ELASTICSEARCH_PORT: "9200"
+      ELASTICSEARCH_SCHEME: http
+      # Auth (permissive for local dev)
+      AUTHENTICATION_PROVIDER: no-auth
+      # Airflow (disabled — we use Dagster for orchestration)
+      PIPELINE_SERVICE_CLIENT_ENABLED: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      openmetadata-elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8585/api/v1/system/version | grep -q version"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - tycoon-net
+
+  # ============================================================
+  # RILL — BI Dashboards
+  # ============================================================
+  rill:
+    image: ghcr.io/rilldata/rill:latest
+    container_name: rill
+    ports:
+      - "9009:9009"
+    volumes:
+      - ./rill:/app/rill
+      - tycoon-data:/app/data
+    working_dir: /app
+    command: ["rill", "start", "rill", "--port", "9009"]
+    networks:
+      - tycoon-net
+
+volumes:
+  tycoon-data:
+    driver: local
+  pg-data:
+    driver: local
+  om-es-data:
+    driver: local
+
+networks:
+  tycoon-net:
+    driver: bridge

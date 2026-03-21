@@ -7,7 +7,7 @@ from typing import Annotated, Optional
 import typer
 
 from tycoon.config import config
-from tycoon.utils.console import error, header, info, success, warn
+from tycoon.utils.console import ai_hint, error, header, info, success, warn
 
 app = typer.Typer(
     help="Ingest raw data from registered sources.",
@@ -60,6 +60,7 @@ def run_source(
         success(f"{source_name} load complete. {load_info}")
     except Exception as exc:
         error(f"{source_name} pipeline failed: {exc}")
+        ai_hint(f"help me debug the {source_name} ingestion")
         raise typer.Exit(1) from exc
 
 
@@ -101,6 +102,7 @@ def ingest_all(
             success(f"{name} complete. {load_info}")
         except Exception as exc:
             error(f"{name} pipeline failed: {exc}")
+            ai_hint(f"help me debug the {name} ingestion")
             raise typer.Exit(1) from exc
 
     success("All ingestion pipelines completed successfully.")

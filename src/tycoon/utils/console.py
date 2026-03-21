@@ -38,3 +38,8 @@ def info(msg: str) -> None:
 
 def header(msg: str) -> None:
     console.print(Panel(msg, style="bold cyan"))
+
+
+def ai_hint(suggestion: str) -> None:
+    """Print a hint suggesting an AI command for follow-up."""
+    console.print(f"[dim]Tip: [bold]tycoon ai ask \"{suggestion}\"[/bold][/dim]")

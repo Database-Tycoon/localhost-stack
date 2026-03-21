@@ -1,0 +1,7 @@
+# Dagster workspace — tells the webserver where to find pipeline code.
+
+load_from:
+  - grpc_server:
+      host: dagster-user-code
+      port: 4000
+      location_name: tycoon_pipelines

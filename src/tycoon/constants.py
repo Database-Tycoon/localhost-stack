@@ -12,6 +12,8 @@ PORTS = {
     "recce": 8000,
     "rill": 9009,
     "tycoon": 8888,
+    "dagster": 3000,
+    "openmetadata": 8585,
 }
 
 # Socrata API pagination (used by rest_api sources targeting Socrata)

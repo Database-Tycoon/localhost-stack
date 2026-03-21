@@ -9,7 +9,7 @@ from typing import Annotated
 import typer
 
 from tycoon.config import config
-from tycoon.utils.console import error, header, info, success, warn
+from tycoon.utils.console import ai_hint, error, header, info, success, warn
 
 
 def explore_cmd(
@@ -149,6 +149,7 @@ def explore_cmd(
         f"Explore scaffolding complete — "
         f"{len(all_generated)} file(s) generated for source '{source_name}'"
     )
+    ai_hint(f"improve the staging models for {source_name}")
 
     # 7. Optionally run dbt build
     if build:
@@ -166,3 +167,5 @@ def explore_cmd(
                 error("dbt build failed. Check the dbt logs above for details.")
                 raise typer.Exit(result.returncode)
             success("dbt build completed successfully.")
+
+    ai_hint(f"improve the staging models for {source_name}")

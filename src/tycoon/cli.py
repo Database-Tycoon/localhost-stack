@@ -5,7 +5,7 @@ from __future__ import annotations
 import typer
 
 import tycoon
-from tycoon.commands import check, db, ingest, init, setup, sources, transform
+from tycoon.commands import ai, check, db, ingest, init, setup, sources, transform
 from tycoon.commands.demo import demo_cmd
 from tycoon.commands.explore import explore_cmd
 from tycoon.commands.serve import serve_cmd
@@ -18,6 +18,7 @@ app = typer.Typer(
 )
 
 # Sub-commands
+app.add_typer(ai.app, name="ai")
 app.add_typer(check.app, name="check")
 app.add_typer(ingest.app, name="ingest")
 app.add_typer(db.app, name="db")

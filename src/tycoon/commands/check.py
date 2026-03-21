@@ -6,7 +6,7 @@ import typer
 
 from tycoon.config import config
 from tycoon.constants import PORTS
-from tycoon.utils.console import console, status_table, success, warn, error, header
+from tycoon.utils.console import ai_hint, console, status_table, success, warn, error, header
 from tycoon.utils.duckdb_utils import db_file_size_mb, get_tables, get_row_count
 from tycoon.utils.process import is_port_in_use, command_exists
 
@@ -93,11 +93,19 @@ def check(
             issues += 1
 
     # -- Optional tools --
-    for tool in ["rill"]:
+    for tool in ["rill", "docker", "dagster"]:
         if command_exists(tool):
             rows.append((f"Tool: {tool}", "OK", "found"))
         else:
             rows.append((f"Tool: {tool}", "WARN", "not found (optional)"))
+
+    # -- Docker services --
+    if command_exists("docker"):
+        for svc_name, port in [("Dagster", PORTS["dagster"]), ("OpenMetadata", PORTS["openmetadata"])]:
+            if is_port_in_use(port):
+                rows.append((f"{svc_name} (port {port})", "OK", "running"))
+            else:
+                rows.append((f"{svc_name} (port {port})", "WARN", "not running"))
 
     # -- dbt project --
     if config.dbt_project_dir.exists():
@@ -109,6 +117,7 @@ def check(
 
     if issues:
         error(f"{issues} issue(s) found")
+        ai_hint("how do I fix my stack health issues?")
         raise typer.Exit(1)
     else:
         success("All checks passed")

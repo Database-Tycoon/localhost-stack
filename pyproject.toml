@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tycoon"
-version = "0.2.0"
+version = "0.3.0"
 description = "Database Tycoon — local-first analytics CLI for exploring any dataset"
 license = "MIT"
 authors = [{name = "Database Tycoon Team"}]
@@ -22,6 +22,15 @@ dependencies = [
     "websockets>=14.0",
     "pyyaml>=6.0",
     "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+dagster = [
+    "dagster>=1.9.0",
+    "dagster-webserver>=1.9.0",
+    "dagster-postgres>=0.25.0",
+    "dagster-dbt>=0.25.0",
+    "dagster-dlt>=0.25.0",
 ]
 
 [dependency-groups]
