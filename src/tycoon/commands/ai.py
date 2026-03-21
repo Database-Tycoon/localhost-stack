@@ -10,12 +10,60 @@ import typer
 from tycoon.ai.client import chat, get_status
 from tycoon.ai.context import gather_context
 from tycoon.ai.file_proposals import parse_proposals
+from tycoon.ai.fix_loop import run_fix_loop
+from tycoon.ai.memory import append_memory, get_memory_path, read_memory, write_memory
 from tycoon.ai.prompts import build_system_prompt
 from tycoon.ai.repl import run_repl
 from tycoon.config import config
-from tycoon.utils.console import console, error, header, info, status_table, success, warn
+from tycoon.utils.console import ai_hint, console, error, header, info, status_table, success, warn
 
 app = typer.Typer(help="Local LLM pipeline assistant (LM Studio).")
+
+memory_app = typer.Typer(help="Manage project AI memory.")
+app.add_typer(memory_app, name="memory")
+
+
+@memory_app.command(name="show")
+def memory_show() -> None:
+    """Print the current project AI memory contents."""
+    content = read_memory(config.root)
+    if not content:
+        info("No AI memory file found. Use 'tycoon ai memory add' to create one.")
+        return
+    console.print(content)
+
+
+@memory_app.command(name="add")
+def memory_add(
+    note: Annotated[str, typer.Argument(help="Note or decision to add to project memory.")],
+) -> None:
+    """Append a note directly to the project AI memory."""
+    append_memory(config.root, note)
+    success(f"Added to AI memory: {note}")
+
+
+@memory_app.command(name="clear")
+def memory_clear(
+    yes: Annotated[bool, typer.Option("--yes", "-y", help="Skip confirmation prompt.")] = False,
+) -> None:
+    """Clear all project AI memory (requires confirmation)."""
+    path = get_memory_path(config.root)
+    if not path.exists():
+        info("No AI memory file found — nothing to clear.")
+        return
+    if not yes:
+        confirmed = typer.confirm("Clear all AI memory? This cannot be undone.")
+        if not confirmed:
+            info("Aborted.")
+            return
+    write_memory(config.root, "")
+    success("AI memory cleared.")
+
+
+@memory_app.command(name="path")
+def memory_path_cmd() -> None:
+    """Print the path to the AI memory file."""
+    console.print(str(get_memory_path(config.root)))
 
 
 def _ensure_ready() -> None:
@@ -249,3 +297,54 @@ def chat_cmd(
         model=model,
         auto_accept=yes,
     )
+
+
+@app.command()
+def fix(
+    model: Annotated[str | None, typer.Option("--model", "-m", help="Override the model to use.")] = None,
+    max_attempts: Annotated[int, typer.Option("--max-attempts", help="Max fix attempts.")] = 3,
+    target: Annotated[str, typer.Option("--target", "-t", help="dbt target profile (default: local).")] = "local",
+    select: Annotated[str | None, typer.Option("--select", "-s", help="dbt model selection syntax.")] = None,
+    no_context: Annotated[bool, typer.Option("--no-context", help="Skip project context gathering.")] = False,
+) -> None:
+    """Automatically fix failing dbt tests using the AI assistant.
+
+    Runs dbt tests, feeds failures to the AI, applies proposed fixes,
+    and repeats until all tests pass or the attempt limit is reached.
+
+    Examples:
+        tycoon ai fix
+        tycoon ai fix --max-attempts 5
+        tycoon ai fix --select staging --target dev
+    """
+    _ensure_ready()
+
+    header("Tycoon AI Fix")
+
+    if no_context:
+        system_prompt = (
+            "You are a data pipeline assistant. The stack uses: "
+            "dlt (ingestion) → DuckDB (storage) → dbt (transforms). "
+            "When proposing file changes, use fenced code blocks with the "
+            "target file path as the language identifier."
+        )
+    else:
+        info("Gathering project context...")
+        system_prompt = _gather_project_context()
+
+    passed = run_fix_loop(
+        dbt_dir=config.dbt_project_dir,
+        project_root=config.root,
+        system_prompt=system_prompt,
+        model=model,
+        max_attempts=max_attempts,
+        target=target,
+        select=select,
+    )
+
+    if passed:
+        success("All dbt tests are passing.")
+    else:
+        error("Could not fix all dbt test failures automatically.")
+        ai_hint("what else could be causing my dbt test failures?")
+        raise typer.Exit(1)

@@ -45,13 +45,28 @@ def _build_sql_database_source(source_config: SourceConfig) -> Any:
 
 
 def _build_filesystem_source(source_config: SourceConfig) -> Any:
-    """Build a dlt source for filesystem (local, S3, GCS)."""
-    from dlt.sources.filesystem import filesystem
+    """Build a dlt source for filesystem (local, S3, GCS).
+
+    For CSV and Parquet globs the raw file metadata stream is piped through
+    the appropriate dlt transformer so that parsed rows are loaded into
+    DuckDB rather than file-level metadata.  Any other glob pattern falls
+    back to the raw filesystem source.
+    """
+    from dlt.sources.filesystem import filesystem, read_csv, read_parquet
 
     cfg = source_config.config
     bucket_url = cfg.get("bucket_url", cfg.get("path", "."))
     file_glob = cfg.get("file_glob", "**/*")
-    return filesystem(bucket_url=bucket_url, file_glob=file_glob)
+
+    files = filesystem(bucket_url=bucket_url, file_glob=file_glob)
+
+    glob_lower = file_glob.lower()
+    if glob_lower.endswith(".csv") or glob_lower.endswith("*.csv"):
+        return files | read_csv()
+    if glob_lower.endswith(".parquet") or glob_lower.endswith("*.parquet"):
+        return files | read_parquet()
+
+    return files
 
 
 def run_source(

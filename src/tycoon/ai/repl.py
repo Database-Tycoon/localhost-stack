@@ -10,6 +10,7 @@ from pathlib import Path
 
 from tycoon.ai.client import chat, chat_stream
 from tycoon.ai.file_proposals import parse_proposals
+from tycoon.ai.memory import append_memory, parse_memory_proposals
 from tycoon.utils.console import console, error, info, success
 
 
@@ -164,3 +165,15 @@ def run_repl(
 
         # Check for file proposals
         _write_proposals(response, project_root, auto_accept)
+
+        # Check for memory proposals
+        memory_proposals = parse_memory_proposals(response)
+        for entry in memory_proposals:
+            console.print(f"\n[bold yellow]Memory proposal:[/bold yellow] {entry}")
+            try:
+                choice = console.input("[bold]Add to project memory? [y/n]:[/bold] ").strip().lower()
+            except EOFError:
+                choice = "n"
+            if choice in ("y", "yes"):
+                append_memory(project_root, entry)
+                info("Added to project memory.")

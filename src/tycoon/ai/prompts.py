@@ -54,6 +54,12 @@ def build_system_prompt(ctx: ProjectContext) -> str:
     )
     sections.append(header)
 
+    # Project memory (persistent decisions — high value for the LLM)
+    if ctx.ai_memory:
+        sections.append(
+            "\n## Project Memory (persistent decisions and notes)\n\n" + ctx.ai_memory.strip()
+        )
+
     # Sources
     if ctx.sources:
         source_lines = ["\n## Registered Sources\n"]

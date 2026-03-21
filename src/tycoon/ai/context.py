@@ -12,6 +12,8 @@ from pathlib import Path
 
 import duckdb
 
+from tycoon.ai.memory import read_memory
+
 
 @dataclass
 class TableSchema:
@@ -42,6 +44,7 @@ class ProjectContext:
     warehouse_tables: list[TableSchema] = field(default_factory=list)
     dbt_models: list[DbtModel] = field(default_factory=list)
     dbt_test_results: str = ""
+    ai_memory: str = ""
 
 
 def _get_table_schemas(db_path: Path, max_tables: int = 30) -> list[TableSchema]:
@@ -150,4 +153,5 @@ def gather_context(
         warehouse_tables=_get_table_schemas(warehouse_db),
         dbt_models=_get_dbt_models(dbt_dir),
         dbt_test_results=_get_dbt_test_results(dbt_dir),
+        ai_memory=read_memory(project_root),
     )

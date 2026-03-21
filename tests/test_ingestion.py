@@ -80,3 +80,48 @@ class TestMTABusSpeedsPipeline:
 
         for name in ("bus_segment_speeds_2023_2024", "bus_segment_speeds_2025"):
             assert hasattr(mta_bus_speeds_pipeline, name), f"Missing resource: {name}"
+
+
+class TestBuildFilesystemSource:
+    """Unit tests for _build_filesystem_source glob-based dispatch."""
+
+    def _make_source_config(self, file_glob: str) -> "SourceConfig":
+        from tycoon.project import SourceConfig
+
+        return SourceConfig(
+            type="filesystem",
+            schema="raw_files",
+            config={"path": "data/input", "file_glob": file_glob},
+        )
+
+    def test_csv_glob_returns_dlt_source(self):
+        """CSV glob should pipe through read_csv, producing a transformer resource."""
+        from tycoon.ingestion.runner import _build_filesystem_source
+
+        source_config = self._make_source_config("*.csv")
+        result = _build_filesystem_source(source_config)
+        assert result is not None
+        # Piped sources are DltResource transformers; the name reflects read_csv
+        assert result.is_transformer is True
+        assert "csv" in result.name.lower()
+
+    def test_parquet_glob_returns_dlt_source(self):
+        """Parquet glob should pipe through read_parquet, producing a transformer resource."""
+        from tycoon.ingestion.runner import _build_filesystem_source
+
+        source_config = self._make_source_config("*.parquet")
+        result = _build_filesystem_source(source_config)
+        assert result is not None
+        assert result.is_transformer is True
+        assert "parquet" in result.name.lower()
+
+    def test_unknown_glob_returns_raw_filesystem_source(self):
+        """An unrecognised glob should fall back to the raw filesystem resource."""
+        from tycoon.ingestion.runner import _build_filesystem_source
+
+        source_config = self._make_source_config("**/*.json")
+        result = _build_filesystem_source(source_config)
+        assert result is not None
+        # Raw filesystem source is not a transformer
+        assert result.is_transformer is False
+        assert result.name == "filesystem"

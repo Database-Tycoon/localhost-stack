@@ -1,6 +1,6 @@
 name: csv-import
 version: 0.1.0
-description: Import CSV or Parquet files from a local directory
+description: Import CSV or Parquet files from a local directory into DuckDB
 
 database:
   raw: data/files_raw.duckdb
@@ -14,5 +14,5 @@ sources:
     type: filesystem
     schema: raw_files
     config:
-      path: data/input/
+      path: data/input
       file_glob: "*.csv"

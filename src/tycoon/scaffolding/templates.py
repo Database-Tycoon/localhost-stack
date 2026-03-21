@@ -73,6 +73,9 @@ dbt_project/target/
 dbt_project/dbt_packages/
 dbt_project/logs/
 
+# Tycoon AI memory logs
+.tycoon/*.log
+
 # OS
 .DS_Store
 """
