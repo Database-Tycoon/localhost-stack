@@ -348,3 +348,162 @@ def fix(
         error("Could not fix all dbt test failures automatically.")
         ai_hint("what else could be causing my dbt test failures?")
         raise typer.Exit(1)
+
+
+# ---------------------------------------------------------------------------
+# Named pipeline registry
+# ---------------------------------------------------------------------------
+
+_AVAILABLE_PIPELINES: list[str] = ["document-staging"]
+
+
+def _build_document_staging_pipeline(
+    model_name: str,
+    profile_summary: str,
+    model_path: str,
+    project_root: Path,
+    dry_run: bool,
+) -> tuple[object, dict]:
+    """Construct the document-staging WorkerPipeline and initial_inputs dict."""
+    from tycoon.ai.workers.base import WorkerPipeline
+    from tycoon.ai.workers.staging import ColumnDocumenter
+    from tycoon.ai.workers.tests import TestWriter
+
+    steps = [
+        (
+            ColumnDocumenter(),
+            {
+                "model_name": "model_name",
+                "profile_summary": "profile_summary",
+                "existing_schema_yaml": "existing_schema_yaml",
+            },
+        ),
+        (
+            TestWriter(),
+            {
+                "model_name": "model_name",
+                "model_path": "model_path",
+                "profile_summary": "profile_summary",
+            },
+        ),
+    ]
+
+    pipeline = WorkerPipeline(steps=steps, project_root=project_root, dry_run=dry_run)
+
+    initial_inputs = {
+        "model_name": model_name,
+        "profile_summary": profile_summary,
+        "model_path": model_path,
+        "existing_schema_yaml": "",
+    }
+
+    return pipeline, initial_inputs
+
+
+@app.command(name="pipeline")
+def pipeline_cmd(
+    name: Annotated[str, typer.Argument(help="Pipeline name (e.g. document-staging).")],
+    model: Annotated[str, typer.Option("--model", "-m", help="dbt model name to run the pipeline against.")],
+    db_path: Annotated[
+        str | None,
+        typer.Option("--db", help="Path to DuckDB file. Defaults to config raw_db."),
+    ] = None,
+    schema: Annotated[str, typer.Option("--schema", help="DuckDB schema name.")] = "main",
+    dry_run: Annotated[
+        bool,
+        typer.Option("--dry-run", help="Parse proposals but do not write files."),
+    ] = False,
+) -> None:
+    """Run a named AI worker pipeline against a dbt model.
+
+    Available pipelines:
+        document-staging  — ColumnDocumenter → TestWriter
+
+    Examples:
+        tycoon ai pipeline document-staging --model trips
+        tycoon ai pipeline document-staging --model events --dry-run
+        tycoon ai pipeline document-staging --model rides --db data/raw.duckdb
+    """
+    _ensure_ready()
+
+    if name not in _AVAILABLE_PIPELINES:
+        error(f"Unknown pipeline: '{name}'")
+        info(f"Available pipelines: {', '.join(_AVAILABLE_PIPELINES)}")
+        raise typer.Exit(1)
+
+    from tycoon.ai.profiler import profile_table
+
+    resolved_db = Path(db_path) if db_path else config.raw_db
+    info(f"Profiling table '{schema}.{model}' in {resolved_db} ...")
+
+    profile = profile_table(
+        db_path=resolved_db,
+        schema_name=schema,
+        table_name=model,
+    )
+
+    if profile is None:
+        error(
+            f"Table '{schema}.{model}' was not found in {resolved_db}.\n"
+            f"  Make sure the table exists and the database path is correct.\n"
+            f"  Run 'tycoon run' to ingest data first if needed."
+        )
+        raise typer.Exit(1)
+
+    profile_summary = profile.summary()
+    model_path = f"models/staging/stg_{model}.sql"
+
+    if name == "document-staging":
+        pipeline, initial_inputs = _build_document_staging_pipeline(
+            model_name=model,
+            profile_summary=profile_summary,
+            model_path=model_path,
+            project_root=config.root,
+            dry_run=dry_run,
+        )
+
+    step_names = ["ColumnDocumenter", "TestWriter"] if name == "document-staging" else []
+
+    if dry_run:
+        warn("Dry run: proposals will be shown but not written to disk.")
+
+    info(f"Running pipeline '{name}' ({len(step_names)} steps) ...")
+    results = pipeline.run(initial_inputs)
+
+    total_steps = len(results)
+    passed_steps = sum(1 for r in results if r.success)
+    total_files = sum(len(r.proposals) for r in results if r.success)
+
+    console.print()
+
+    for i, result in enumerate(results):
+        step_label = step_names[i] if i < len(step_names) else f"Step {i + 1}"
+
+        if result.success:
+            written_paths = [p.path for p in result.proposals]
+            if dry_run:
+                label = f"[dim](dry-run)[/dim] {len(result.proposals)} proposal(s)"
+            else:
+                label = f"{len(result.proposals)} file(s) written"
+            success(f"[{i + 1}/{total_steps}] {step_label}: {label}")
+            for path in written_paths:
+                console.print(f"    [dim]{path}[/dim]")
+        else:
+            error(f"[{i + 1}/{total_steps}] {step_label}: FAILED")
+            console.print(f"    {result.message}")
+            console.print()
+            error(f"Pipeline '{name}' halted at step {i + 1}.")
+            raise typer.Exit(1)
+
+    console.print()
+    if dry_run:
+        info(
+            f"Pipeline '{name}' complete ({passed_steps}/{total_steps} steps, "
+            f"{total_files} proposal(s) — dry run, nothing written)."
+        )
+    else:
+        success(
+            f"Pipeline '{name}' complete: "
+            f"{passed_steps}/{total_steps} steps passed, "
+            f"{total_files} file(s) written."
+        )
