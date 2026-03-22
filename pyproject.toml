@@ -28,7 +28,6 @@ dependencies = [
 dagster = [
     "dagster>=1.9.0",
     "dagster-webserver>=1.9.0",
-    "dagster-postgres>=0.25.0",
     "dagster-dbt>=0.25.0",
     "dagster-dlt>=0.25.0",
 ]

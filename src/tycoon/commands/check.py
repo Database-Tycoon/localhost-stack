@@ -93,19 +93,11 @@ def check(
             issues += 1
 
     # -- Optional tools --
-    for tool in ["rill", "docker", "dagster"]:
+    for tool in ["rill", "dagster"]:
         if command_exists(tool):
             rows.append((f"Tool: {tool}", "OK", "found"))
         else:
             rows.append((f"Tool: {tool}", "WARN", "not found (optional)"))
-
-    # -- Docker services --
-    if command_exists("docker"):
-        for svc_name, port in [("Dagster", PORTS["dagster"]), ("OpenMetadata", PORTS["openmetadata"])]:
-            if is_port_in_use(port):
-                rows.append((f"{svc_name} (port {port})", "OK", "running"))
-            else:
-                rows.append((f"{svc_name} (port {port})", "WARN", "not running"))
 
     # -- dbt project --
     if config.dbt_project_dir.exists():

@@ -1,53 +1,11 @@
-# Dagster instance configuration
-# Postgres storage when running in Docker; SQLite locally.
+# Dagster instance configuration — SQLite storage (local-first, zero deps).
+# Override with DAGSTER_HOME env var to change storage location.
 
-run_storage:
-  module: dagster_postgres.run_storage
-  class: PostgresRunStorage
-  config:
-    postgres_db:
-      hostname:
-        env: DAGSTER_POSTGRES_HOST
-      port: 5432
-      username:
-        env: DAGSTER_POSTGRES_USER
-      password:
-        env: DAGSTER_POSTGRES_PASSWORD
-      db_name:
-        env: DAGSTER_POSTGRES_DB
-
-event_log_storage:
-  module: dagster_postgres.event_log
-  class: PostgresEventLogStorage
-  config:
-    postgres_db:
-      hostname:
-        env: DAGSTER_POSTGRES_HOST
-      port: 5432
-      username:
-        env: DAGSTER_POSTGRES_USER
-      password:
-        env: DAGSTER_POSTGRES_PASSWORD
-      db_name:
-        env: DAGSTER_POSTGRES_DB
-
-schedule_storage:
-  module: dagster_postgres.schedule_storage
-  class: PostgresScheduleStorage
-  config:
-    postgres_db:
-      hostname:
-        env: DAGSTER_POSTGRES_HOST
-      port: 5432
-      username:
-        env: DAGSTER_POSTGRES_USER
-      password:
-        env: DAGSTER_POSTGRES_PASSWORD
-      db_name:
-        env: DAGSTER_POSTGRES_DB
-
-# Limit DuckDB writes to 1 concurrent op
+# Concurrency control for DuckDB single-writer constraint
 concurrency:
   default_op_concurrency_limit: 4
-  unique_value_concurrency:
-    enabled: true
+  runs:
+    tag_concurrency_limits:
+      - key: "dagster/concurrency_key"
+        value: "duckdb_writer"
+        limit: 1
