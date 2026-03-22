@@ -13,6 +13,6 @@ from tycoon.dbt import dbt_project
 
 
 @dbt_assets(manifest=dbt_project.manifest_path)
-def dbt_project_assets(context: AssetExecutionContext, dbt: DbtCliResource):
+def dbt_project_assets(context, dbt: DbtCliResource):
     """Materialize all dbt models as Dagster assets."""
     yield from dbt.cli(["build"], context=context).stream()
