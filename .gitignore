@@ -39,3 +39,12 @@ rill/tmp/
 
 # DuckLake
 ducklake_data/
+
+# Dagster temp directories
+.tmp_dagster_home_*/
+
+# AI tool configs (machine-specific)
+.aider*
+.config/
+.gemini/
+ai-workbench/
