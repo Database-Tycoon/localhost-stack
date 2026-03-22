@@ -4,12 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from dagster import ConfigurableResource
 from dagster_dbt import DbtCliResource
 from dagster_dlt import DagsterDltResource
 
 
-PROJECT_DIR = Path(__file__).resolve().parent.parent
+PROJECT_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
 
 def get_dbt_resource() -> DbtCliResource:

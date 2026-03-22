@@ -21,7 +21,7 @@ from tycoon.config import TycoonConfig
 from tycoon.ingestion.runner import run_source
 
 
-PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
+PROJECT_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
 
 
 def _make_ingestion_asset(source_name: str):

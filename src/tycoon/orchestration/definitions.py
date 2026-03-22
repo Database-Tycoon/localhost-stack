@@ -7,10 +7,10 @@ from dagster import (
     define_asset_job,
 )
 
-from dagster_pipeline.assets.ingestion import ingestion_assets
-from dagster_pipeline.assets.rill import rill_fct_bus_segment_speeds
-from dagster_pipeline.assets.transforms import dbt_project_assets
-from dagster_pipeline.resources import get_dbt_resource, get_dlt_resource
+from tycoon.orchestration.assets.ingestion import ingestion_assets
+from tycoon.orchestration.assets.rill import rill_fct_bus_segment_speeds
+from tycoon.orchestration.assets.transforms import dbt_project_assets
+from tycoon.orchestration.resources import get_dbt_resource, get_dlt_resource
 
 
 all_assets = [dbt_project_assets, rill_fct_bus_segment_speeds]

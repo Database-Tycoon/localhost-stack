@@ -6,7 +6,7 @@ from pathlib import Path
 from dagster import AssetExecutionContext, asset
 
 # Define the project directory
-PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
+PROJECT_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
 RILL_PROJECT_DIR = PROJECT_DIR / "rill"
 
 
