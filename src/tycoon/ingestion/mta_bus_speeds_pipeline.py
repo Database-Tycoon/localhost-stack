@@ -12,8 +12,10 @@ from tycoon.config import config
 
 # MTA Bus Speeds dataset constants (NY State Socrata)
 MTA_BUS_SPEEDS_DOMAIN = "data.ny.gov"
-DATASET_BUS_SPEEDS_2023_2024 = "58t6-89vi"
-DATASET_BUS_SPEEDS_2025 = "kufs-yh3x"
+MTA_BUS_SPEEDS_DATASETS = {
+    "2023-2024": "58t6-89vi",
+    "2025": "kufs-yh3x",
+}
 SOCRATA_PAGE_SIZE = 50_000
 
 
@@ -56,44 +58,40 @@ def _socrata_pages(
                 break
 
 
-@dlt.resource(name="bus_segment_speeds_2023_2024", write_disposition="replace")
-def bus_segment_speeds_2023_2024(
-    max_records: int | None = None,
-) -> Iterator[dict[str, Any]]:
-    """Yield records from the MTA bus segment speeds 2023-2024 dataset (~11.7 M rows)."""
-    for page in _socrata_pages(
-        MTA_BUS_SPEEDS_DOMAIN, DATASET_BUS_SPEEDS_2023_2024, max_records
-    ):
-        yield from page
-
-
-@dlt.resource(name="bus_segment_speeds_2025", write_disposition="replace")
-def bus_segment_speeds_2025(
-    max_records: int | None = None,
-) -> Iterator[dict[str, Any]]:
-    """Yield records from the MTA bus segment speeds 2025 dataset (~6.3 M rows)."""
-    for page in _socrata_pages(
-        MTA_BUS_SPEEDS_DOMAIN, DATASET_BUS_SPEEDS_2025, max_records
-    ):
-        yield from page
 
 
 @dlt.source(name="raw_mta_bus_speeds")
 def mta_bus_speeds_source(
+    years: list[str] | None = None,
     max_records: int | None = None,
-    skip_2023_2024: bool = False,
-) -> list[Any]:
-    """dlt source bundling MTA bus speeds resources."""
-    resources: list[Any] = []
-    if not skip_2023_2024:
-        resources.append(bus_segment_speeds_2023_2024(max_records=max_records))
-    resources.append(bus_segment_speeds_2025(max_records=max_records))
-    return resources
+) -> Iterator[Any]:
+    """
+    dlt source for MTA bus speeds. Creates one resource per year/dataset.
+
+    If `years` is not provided, all available datasets will be ingested.
+    """
+    datasets_to_ingest = MTA_BUS_SPEEDS_DATASETS
+    if years:
+        datasets_to_ingest = {
+            year_range: dataset_id
+            for year_range, dataset_id in MTA_BUS_SPEEDS_DATASETS.items()
+            if year_range in years
+        }
+
+    for year_range, dataset_id in datasets_to_ingest.items():
+        # dlt resource names must be valid python identifiers
+        resource_name = f"bus_segment_speeds_{year_range.replace('-', '_')}"
+
+        yield dlt.resource(
+            _socrata_pages(MTA_BUS_SPEEDS_DOMAIN, dataset_id, max_records),
+            name=resource_name,
+            write_disposition="replace",
+        )
 
 
 def run_pipeline(
     max_records: int | None = None,
-    skip_2023_2024: bool = False,
+    years: list[str] | None = None,
 ) -> tuple[dlt.Pipeline, Any]:
     """Create, run, and return the MTA bus speeds dlt pipeline."""
     config.ensure_data_dir()
@@ -104,7 +102,6 @@ def run_pipeline(
         dataset_name="raw_mta_bus_speeds",
     )
 
-    load_info = pipeline.run(
-        mta_bus_speeds_source(max_records=max_records, skip_2023_2024=skip_2023_2024)
-    )
+    source = mta_bus_speeds_source(max_records=max_records, years=years)
+    load_info = pipeline.run(source)
     return pipeline, load_info
