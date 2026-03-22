@@ -6,23 +6,10 @@ as a Dagster asset with full lineage.
 
 from __future__ import annotations
 
-import subprocess
-from pathlib import Path
-
 from dagster import AssetExecutionContext
-from dagster_dbt import DbtCliResource, dbt_assets, DbtProject
+from dagster_dbt import DbtCliResource, dbt_assets
 
-PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
-DBT_PROJECT_DIR = PROJECT_DIR / "dbt_project"
-
-# Parse the dbt project to generate a manifest for Dagster.
-# This runs at definition time (import / code-server start).
-dbt_project = DbtProject(
-    project_dir=DBT_PROJECT_DIR,
-    profiles_dir=DBT_PROJECT_DIR,
-    target="local",
-)
-dbt_project.prepare_if_dev()
+from tycoon.dbt import dbt_project
 
 
 @dbt_assets(manifest=dbt_project.manifest_path)
