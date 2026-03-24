@@ -1,0 +1,5 @@
+packages:
+  - git: "https://github.com/dlt-hub/dlt-dbt-stripe.git"
+    revision: main
+  - git: "https://github.com/dlt-hub/dlt-dbt-hubspot.git"
+    revision: main
