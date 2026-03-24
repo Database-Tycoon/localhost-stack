@@ -231,11 +231,36 @@ def add_source(
     success(f"Source [bold]{source_name}[/bold] added to tycoon.yml")
 
     if catalog_entry:
+        _maybe_install_catalog_source(source_type)
         info(f"Run it with: [bold]tycoon ingest run {source_name}[/bold]")
         if catalog_entry.docs_url:
             info(f"Docs: {catalog_entry.docs_url}")
     else:
         _maybe_install_dlt_extra(source_type)
+
+
+def _maybe_install_catalog_source(source_type: str) -> None:
+    """Offer to download the dlt verified source if not already installed."""
+    from tycoon.ingestion.source_manager import install_source, is_source_installed
+
+    if is_source_installed(source_type):
+        return
+
+    install = typer.confirm(
+        f"Source '{source_type}' hasn't been downloaded yet. Download it now via dlt init?",
+        default=True,
+    )
+    if install:
+        info(f"Running dlt init {source_type} ...")
+        if install_source(source_type):
+            success(f"Source '{source_type}' installed to ~/.tycoon/sources/")
+        else:
+            warn(
+                f"Failed to install '{source_type}'. "
+                f"You can retry with: tycoon sources install {source_type}"
+            )
+    else:
+        info(f"Skipped. Install later with: tycoon sources install {source_type}")
 
 
 def _maybe_install_dlt_extra(source_type: str) -> None:
@@ -262,6 +287,30 @@ def _maybe_install_dlt_extra(source_type: str) -> None:
             warn(f"Failed to install dlt[{source_type}]. You can install it manually.")
     else:
         info(f"Skipped. Install later with: uv pip install 'dlt[{source_type}]'")
+
+
+@app.command("install")
+def install_source_cmd(
+    source_type: str = typer.Argument(help="Catalog source type to install (e.g. github, slack)"),
+) -> None:
+    """Download a catalog source via dlt init into ~/.tycoon/sources/."""
+    from tycoon.ingestion.source_manager import install_source, is_source_installed
+
+    if source_type not in CATALOG:
+        error(f"[bold]{source_type}[/bold] is not a known catalog source.")
+        info("Run [bold]tycoon sources catalog[/bold] to see available sources.")
+        raise typer.Exit(1)
+
+    if is_source_installed(source_type):
+        info(f"Source [bold]{source_type}[/bold] is already installed.")
+        return
+
+    info(f"Running dlt init {source_type} ...")
+    if install_source(source_type):
+        success(f"Source [bold]{source_type}[/bold] installed to ~/.tycoon/sources/")
+    else:
+        error(f"Failed to install [bold]{source_type}[/bold]. Check that dlt is installed.")
+        raise typer.Exit(1)
 
 
 @app.command("remove")

@@ -8,7 +8,9 @@ import subprocess
 
 from tycoon.utils.console import info
 
-# Known dlt extras mapping (source_type -> pip extra name)
+# dlt pip extras for generic source types (rest_api, sql_database, filesystem).
+# Catalog sources (github, slack, stripe, hubspot, notion) are NOT pip extras —
+# they are downloaded on demand via `dlt init` by source_manager.py.
 DLT_EXTRAS: dict[str, str] = {
     "rest_api": "rest_api",
     "sql_database": "sql_database",
@@ -16,18 +18,13 @@ DLT_EXTRAS: dict[str, str] = {
     "airtable": "airtable",
     "chess": "chess",
     "facebook_ads": "facebook_ads",
-    "github": "github",
     "google_analytics": "google_analytics",
     "google_sheets": "google_sheets",
-    "hubspot": "hubspot",
     "jira": "jira",
     "mongodb": "mongodb",
-    "notion": "notion",
     "pipedrive": "pipedrive",
     "salesforce": "salesforce",
     "shopify": "shopify",
-    "slack": "slack",
-    "stripe": "stripe",
     "zendesk": "zendesk",
 }
 
