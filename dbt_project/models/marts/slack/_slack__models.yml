@@ -1,0 +1,113 @@
+version: 2
+
+models:
+  - name: slack__channel_activity
+    description: >
+      Daily channel-level activity summary. Grain: channel × calendar day.
+      Counts only messages where is_user_message is true, so system events
+      (joins, leaves, archive notices) are excluded from all metrics.
+      Materialized as a table for fast BI queries.
+    columns:
+      - name: channel_activity_key
+        description: >
+          MD5 surrogate key derived from channel_id and activity_date.
+        tests:
+          - not_null
+          - unique
+      - name: channel_id
+        description: Slack channel identifier (foreign key to stg_slack__channels).
+        tests:
+          - not_null
+      - name: channel_name
+        description: Human-readable channel name without the leading #.
+        tests:
+          - not_null
+      - name: is_private
+        description: True if the channel is private.
+        tests:
+          - not_null
+      - name: is_active
+        description: True if the channel is not archived.
+        tests:
+          - not_null
+      - name: activity_date
+        description: Calendar day (truncated from message_ts) for this activity row.
+        tests:
+          - not_null
+      - name: message_count
+        description: Number of user messages posted on this day in this channel.
+        tests:
+          - not_null
+      - name: unique_users
+        description: Count of distinct users who posted at least one message.
+        tests:
+          - not_null
+      - name: thread_replies
+        description: Number of messages that were replies inside a thread.
+        tests:
+          - not_null
+      - name: threads_started
+        description: Number of messages that are thread roots (have at least one reply).
+        tests:
+          - not_null
+      - name: messages_with_reactions
+        description: Number of messages that received at least one emoji reaction.
+        tests:
+          - not_null
+
+  - name: slack__user_activity
+    description: >
+      Weekly user-level activity summary. Grain: user × ISO week (Monday-start).
+      Counts only messages where is_user_message is true. Useful for identifying
+      active contributors, tracking engagement trends, and understanding channel breadth.
+      Materialized as a table for fast BI queries.
+    columns:
+      - name: user_activity_key
+        description: MD5 surrogate key derived from user_id and activity_week.
+        tests:
+          - not_null
+          - unique
+      - name: user_id
+        description: Slack user identifier (foreign key to stg_slack__users).
+        tests:
+          - not_null
+      - name: username
+        description: Slack handle without the leading @.
+        tests:
+          - not_null
+      - name: real_name
+        description: User's full display name.
+      - name: is_bot
+        description: True if the user is a bot or app integration.
+        tests:
+          - not_null
+      - name: is_active
+        description: True for human, non-deactivated accounts.
+        tests:
+          - not_null
+      - name: activity_week
+        description: ISO week start date (Monday) for this activity row.
+        tests:
+          - not_null
+      - name: messages_sent
+        description: Total user messages posted during the week.
+        tests:
+          - not_null
+      - name: channels_active_in
+        description: Count of distinct channels the user posted in during the week.
+        tests:
+          - not_null
+      - name: threads_started
+        description: >
+          Messages posted by this user that are thread roots (is_thread_root is true),
+          i.e., conversations they initiated that received replies.
+        tests:
+          - not_null
+      - name: thread_replies_sent
+        description: Messages posted by this user that are replies inside a thread.
+        tests:
+          - not_null
+      - name: messages_with_reactions
+        description: Number of the user's messages that received at least one reaction.
+        tests:
+          - not_null

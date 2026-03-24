@@ -1,0 +1,40 @@
+version: 2
+
+# Source declaration for raw HubSpot data loaded by the dlt HubSpot pipeline.
+# Database: raw (read-only DuckDB alias pointing to nyc_open_data_raw.duckdb)
+# Schema:   raw_hubspot
+#
+# The dlt-dbt-hubspot package (dbt_packages/hubspot) expects tables named:
+#   contacts, companies, deals, tickets, contacts__tickets, contacts__deals, _dlt_loads
+#
+# Our dlt HubSpot pipeline loads: contacts, companies, deals, tickets
+# The contacts__tickets and contacts__deals child tables are loaded by dlt when those
+# associations are present. _dlt_loads is always present.
+#
+# Table names match the package exactly — NO alias views are needed for core tables.
+# Only _dlt_loads needs a passthrough view so it lands in hubspot_staging where
+# source_dataset_name: "raw_hubspot" (passed via --vars) resolves.
+#
+# Run HubSpot package models with:
+#   dbt build --select hubspot+ \
+#     --vars '{"source_dataset_name": "raw_hubspot", "destination_dataset_name": "hubspot_staging"}'
+
+sources:
+  - name: hubspot
+    database: raw
+    schema: raw_hubspot
+    tables:
+      - name: contacts
+        description: Raw HubSpot contacts, loaded by dlt.
+      - name: companies
+        description: Raw HubSpot companies, loaded by dlt.
+      - name: deals
+        description: Raw HubSpot deals, loaded by dlt.
+      - name: tickets
+        description: Raw HubSpot tickets, loaded by dlt.
+      - name: contacts__tickets
+        description: dlt child table — HubSpot contact-to-ticket associations (if loaded).
+      - name: contacts__deals
+        description: dlt child table — HubSpot contact-to-deal associations (if loaded).
+      - name: _dlt_loads
+        description: dlt load tracking table. Used by the package's dlt_active_load_ids model.

@@ -1,0 +1,40 @@
+version: 2
+
+# Source declaration for raw Stripe data loaded by the dlt Stripe pipeline.
+# Database: raw (read-only DuckDB alias pointing to nyc_open_data_raw.duckdb)
+# Schema:   raw_stripe
+#
+# The dlt-dbt-stripe package (dbt_packages/stripe_analytics) expects SINGULAR table
+# names: customer, subscription, invoice, product, price, coupon, event,
+# balance_transaction.  Our dlt pipeline loads PLURAL names.
+#
+# The alias views in this directory (customer.sql, subscription.sql, invoice.sql,
+# product.sql, _dlt_loads.sql) bridge the naming gap by selecting * from these
+# sources and landing in the `stripe_staging` schema, which is where
+# source_dataset_name points.
+#
+# Tables NOT loaded by our dlt pipeline (price, coupon, event, balance_transaction)
+# are omitted. The package's staging models for those tables will fail gracefully
+# if you don't select them. Add alias views here if you add those resources to
+# the dlt Stripe pipeline.
+#
+# Our dlt pipeline also loads `charges`, which has no corresponding package model.
+# It is declared here for lineage but needs its own staging model if used.
+
+sources:
+  - name: stripe
+    database: raw
+    schema: raw_stripe
+    tables:
+      - name: customers
+        description: Raw Stripe customers, loaded by dlt. Aliased to `customer` by the alias view.
+      - name: subscriptions
+        description: Raw Stripe subscriptions, loaded by dlt. Aliased to `subscription` by the alias view.
+      - name: invoices
+        description: Raw Stripe invoices, loaded by dlt. Aliased to `invoice` by the alias view.
+      - name: products
+        description: Raw Stripe products, loaded by dlt. Aliased to `product` by the alias view.
+      - name: charges
+        description: Raw Stripe charges, loaded by dlt. No corresponding dlt-dbt-stripe package model.
+      - name: _dlt_loads
+        description: dlt load tracking table. Passed through as-is for the package's dlt_active_load_ids model.

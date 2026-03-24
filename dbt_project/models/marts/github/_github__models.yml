@@ -1,0 +1,160 @@
+version: 2
+
+models:
+  - name: github__issues
+    description: >
+      Final issues mart. One row per GitHub issue or pull-request thread,
+      materialized as a table for BI and ad-hoc query performance.
+      All cleaning and casting is inherited from the staging layer; this model
+      adds no additional transformations.
+    columns:
+      - name: issue_id
+        description: MD5 surrogate key.
+        tests:
+          - not_null
+          - unique
+      - name: id
+        description: GitHub's globally unique numeric issue ID.
+        tests:
+          - not_null
+          - unique
+      - name: number
+        description: Repository-scoped issue number.
+        tests:
+          - not_null
+      - name: title
+        description: Issue title.
+        tests:
+          - not_null
+      - name: body
+        description: Issue body text (Markdown).
+      - name: state
+        description: Issue lifecycle state — open or closed.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['open', 'closed']
+      - name: is_open
+        description: True when state = 'open'.
+        tests:
+          - not_null
+      - name: is_pull_request
+        description: True when this issue row is actually a pull request.
+        tests:
+          - not_null
+      - name: author_login
+        description: GitHub username of the issue author.
+      - name: author_id
+        description: GitHub numeric user ID of the issue author.
+      - name: comments
+        description: Count of comments on the issue.
+      - name: reactions_total
+        description: Total reaction count.
+      - name: labels
+        description: Raw JSON array of label objects.
+      - name: assignees
+        description: Raw JSON array of assignee objects.
+      - name: created_at
+        description: Timestamp when the issue was created.
+        tests:
+          - not_null
+      - name: updated_at
+        description: Timestamp when the issue was last updated.
+      - name: closed_at
+        description: Timestamp when the issue was closed; null if still open.
+
+  - name: github__pull_requests
+    description: >
+      Final pull requests mart. One row per GitHub pull request, materialized
+      as a table. Includes all cleaned columns from the staging layer plus
+      cycle_time_hours for engineering-velocity analysis.
+    columns:
+      - name: pull_request_id
+        description: MD5 surrogate key.
+        tests:
+          - not_null
+          - unique
+      - name: id
+        description: GitHub's globally unique numeric PR ID.
+        tests:
+          - not_null
+          - unique
+      - name: number
+        description: Repository-scoped pull request number.
+        tests:
+          - not_null
+      - name: title
+        description: Pull request title.
+        tests:
+          - not_null
+      - name: state
+        description: PR lifecycle state — open or closed.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['open', 'closed']
+      - name: is_merged
+        description: True when the PR has been merged.
+        tests:
+          - not_null
+      - name: is_draft
+        description: True when the PR was in draft state at load time.
+        tests:
+          - not_null
+      - name: author_login
+        description: GitHub username of the PR author.
+      - name: head_ref
+        description: Source (feature) branch name.
+      - name: base_ref
+        description: Target (base) branch name.
+      - name: additions
+        description: Lines added by this PR.
+      - name: deletions
+        description: Lines deleted by this PR.
+      - name: changed_files
+        description: Number of files changed.
+      - name: commits
+        description: Number of commits in this PR.
+      - name: review_comments
+        description: Number of inline review comments.
+      - name: cycle_time_hours
+        description: >
+          Hours from PR open to merge or close. Null for open PRs.
+      - name: requested_reviewers
+        description: Raw JSON array of requested reviewer objects.
+      - name: created_at
+        description: Timestamp when the PR was opened.
+        tests:
+          - not_null
+      - name: updated_at
+        description: Timestamp when the PR was last updated.
+      - name: merged_at
+        description: Timestamp when the PR was merged; null if not merged.
+      - name: closed_at
+        description: Timestamp when the PR was closed; null if still open.
+
+  - name: github__repo_activity
+    description: >
+      Daily repository activity summary. Each row represents one calendar day
+      aggregated from commits and pull requests. Provides a quick view of
+      engineering throughput: commit volume, lines changed, and PRs merged.
+      Days with no commits but with merged PRs are still included (and vice
+      versa) thanks to a full outer join.
+    columns:
+      - name: activity_date
+        description: Calendar day (UTC) truncated to midnight.
+        tests:
+          - not_null
+          - unique
+      - name: commit_count
+        description: Number of commits whose authored date falls on this day.
+      - name: lines_added
+        description: Sum of additions across all commits on this day.
+      - name: lines_deleted
+        description: Sum of deletions across all commits on this day.
+      - name: net_lines
+        description: lines_added minus lines_deleted for this day.
+      - name: prs_merged
+        description: Number of pull requests merged on this day.
+      - name: prs_opened
+        description: Number of pull requests opened on this day.

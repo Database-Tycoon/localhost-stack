@@ -1,0 +1,142 @@
+version: 2
+
+models:
+  - name: stg_slack__channels
+    description: >
+      Staged Slack channels. Epoch timestamps are cast to TIMESTAMP, nested dlt
+      column names are aliased to clean business names, and an is_active convenience
+      flag is derived from is_archived.
+    columns:
+      - name: channel_id
+        description: Slack-assigned channel identifier (natural key).
+        tests:
+          - not_null
+          - unique
+      - name: channel_name
+        description: Channel name without the leading #.
+        tests:
+          - not_null
+      - name: is_private
+        description: True if the channel is private.
+        tests:
+          - not_null
+      - name: is_archived
+        description: True if the channel has been archived.
+        tests:
+          - not_null
+      - name: is_active
+        description: Derived convenience flag — true when the channel is not archived.
+        tests:
+          - not_null
+      - name: topic
+        description: Channel topic text (sourced from topic__value).
+      - name: purpose
+        description: Channel purpose text (sourced from purpose__value).
+      - name: num_members
+        description: Current member count.
+      - name: created_at
+        description: Channel creation timestamp (cast from Unix epoch integer).
+      - name: updated_at
+        description: Last metadata update timestamp (cast from Unix epoch integer).
+
+  - name: stg_slack__users
+    description: >
+      Staged Slack workspace members. Profile nested columns are flattened,
+      and an is_active flag identifies human accounts that have not been deactivated.
+    columns:
+      - name: user_id
+        description: Slack-assigned user identifier (natural key).
+        tests:
+          - not_null
+          - unique
+      - name: username
+        description: Slack handle (username) without the leading @.
+        tests:
+          - not_null
+      - name: real_name
+        description: User's full display name as set in their profile.
+      - name: display_name
+        description: User's chosen display name.
+      - name: email
+        description: Email address from the user profile (sourced from profile__email).
+      - name: title
+        description: Job title from the user profile (sourced from profile__title).
+      - name: profile_image_url
+        description: URL of the 72×72 px profile photo.
+      - name: tz
+        description: IANA timezone string (e.g. America/New_York).
+      - name: is_bot
+        description: True if the user is a bot or app integration.
+        tests:
+          - not_null
+      - name: is_admin
+        description: True if the user has workspace admin privileges.
+        tests:
+          - not_null
+      - name: is_owner
+        description: True if the user is a workspace owner.
+        tests:
+          - not_null
+      - name: is_deleted
+        description: True if the account has been deactivated.
+        tests:
+          - not_null
+      - name: is_active
+        description: >
+          True for human, non-deactivated accounts (not deleted and not a bot).
+          Useful for filtering out bots and former employees from analyses.
+        tests:
+          - not_null
+
+  - name: stg_slack__messages
+    description: >
+      Staged Slack messages. The string-encoded float ts field is cast to TIMESTAMP,
+      thread context flags are derived, and a is_user_message flag identifies
+      substantive human-authored messages (excluding system subtypes).
+    columns:
+      - name: message_ts
+        description: >
+          Message timestamp cast to TIMESTAMP (from string float epoch ts).
+          Together with channel_id this forms the natural composite key for a message.
+        tests:
+          - not_null
+      - name: channel_id
+        description: Channel the message was posted in (foreign key to stg_slack__channels.channel_id).
+        tests:
+          - not_null
+      - name: user_id
+        description: >
+          User who posted the message (foreign key to stg_slack__users.user_id).
+          Null for bot messages that do not carry a user field.
+      - name: text
+        description: Plain-text body of the message.
+      - name: message_type
+        description: Slack event type (typically 'message').
+      - name: subtype
+        description: Slack message subtype (null for normal user messages).
+      - name: thread_ts
+        description: Parent thread timestamp cast to TIMESTAMP; null for standalone messages.
+      - name: reply_count
+        description: Number of thread replies (non-null on thread root messages only).
+      - name: is_thread_reply
+        description: >
+          True when thread_ts is present and differs from message_ts, meaning this
+          message is a reply inside a thread rather than a root post.
+        tests:
+          - not_null
+      - name: is_thread_root
+        description: True when the message has at least one reply (reply_count > 0).
+        tests:
+          - not_null
+      - name: has_reactions
+        description: True when the message has one or more emoji reactions.
+        tests:
+          - not_null
+      - name: is_user_message
+        description: >
+          True for substantive human-authored messages. False for system subtypes:
+          bot_message, channel_join, channel_leave, channel_archive, channel_unarchive,
+          channel_name, channel_purpose, channel_topic, file_share, me_message,
+          thread_broadcast.
+        tests:
+          - not_null
