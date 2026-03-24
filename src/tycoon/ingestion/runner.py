@@ -23,6 +23,15 @@ _LEGACY_PIPELINES: dict[str, str] = {
     "mta-bus-speeds": "tycoon.ingestion.mta_bus_speeds_pipeline",
 }
 
+# Catalog source modules keyed by source type
+_CATALOG_SOURCES: dict[str, str] = {
+    "github": "tycoon.ingestion.sources.github",
+    "slack": "tycoon.ingestion.sources.slack",
+    "stripe": "tycoon.ingestion.sources.stripe",
+    "hubspot": "tycoon.ingestion.sources.hubspot",
+    "notion": "tycoon.ingestion.sources.notion",
+}
+
 
 def _build_rest_api_source(source_config: SourceConfig) -> Any:
     """Build a dlt source for a generic REST API."""
@@ -83,9 +92,13 @@ def run_source(
 
     Returns (pipeline, load_info).
     """
-    # Legacy pipeline delegation
+    # Legacy pipeline delegation (keyed by source name)
     if name in _LEGACY_PIPELINES:
         return _run_legacy(name, max_records=max_records, **kwargs)
+
+    # Catalog source dispatch (keyed by source type)
+    if source_config.type in _CATALOG_SOURCES:
+        return _run_catalog(source_config.type, name, source_config, raw_db_path, max_records)
 
     # Generic pipeline
     pipeline = dlt.pipeline(
@@ -135,3 +148,18 @@ def _run_legacy(
     module_path = _LEGACY_PIPELINES[name]
     mod = importlib.import_module(module_path)
     return mod.run_pipeline(max_records=max_records, **kwargs)
+
+
+def _run_catalog(
+    source_type: str,
+    name: str,
+    source_config: SourceConfig,
+    raw_db_path: Path,
+    max_records: int | None = None,
+) -> tuple[dlt.Pipeline, Any]:
+    """Delegate to a pre-built catalog source module."""
+    import importlib
+
+    module_path = _CATALOG_SOURCES[source_type]
+    mod = importlib.import_module(module_path)
+    return mod.run_pipeline(name, source_config, raw_db_path, max_records=max_records)
