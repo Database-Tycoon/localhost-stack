@@ -8,6 +8,7 @@ import tycoon
 from tycoon.commands import ai, ask, check, db, ingest, init, setup, sources, start, transform
 from tycoon.commands.demo import demo_cmd
 from tycoon.commands.explore import explore_cmd
+from tycoon.commands.run import run_cmd
 from tycoon.commands.serve import serve_cmd
 from tycoon.commands.stop import stop_cmd
 
@@ -33,6 +34,10 @@ app.command(name="stop")(stop_cmd)
 app.command(name="serve")(serve_cmd)
 app.command(name="demo")(demo_cmd)
 app.command(name="explore")(explore_cmd)
+app.command(
+    name="run",
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+)(run_cmd)
 
 
 @app.command()
