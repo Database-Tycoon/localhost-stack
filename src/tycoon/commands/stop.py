@@ -31,8 +31,7 @@ def stop_cmd(
         info("No PID file found — finding processes by port...")
         _stop_via_ports(targets)
 
-    if not services:
-        clear_pids()
+    clear_pids()
 
 
 def _stop_via_pid_file(pid_file, targets: list[str]) -> None:
@@ -79,10 +78,50 @@ def _stop_via_ports(targets: list[str]) -> None:
 
 
 def _kill_pid(name: str, pid: int) -> None:
-    try:
-        os.kill(pid, signal.SIGTERM)
-        success(f"Stopped {name} (PID {pid})")
-    except ProcessLookupError:
+    """Kill *pid* and all of its descendants (SIGTERM, then SIGKILL stragglers)."""
+    import subprocess
+    import time
+
+    # Collect the full process tree (children first, then the root)
+    all_pids = _collect_tree(pid)
+
+    any_killed = False
+    for p in all_pids:
+        try:
+            os.kill(p, signal.SIGTERM)
+            any_killed = True
+        except (ProcessLookupError, PermissionError):
+            pass
+
+    if not any_killed:
         warn(f"{name}: process {pid} not found (already stopped?)")
-    except PermissionError:
-        error(f"{name}: no permission to kill PID {pid}")
+        return
+
+    # Give processes a moment to exit, then SIGKILL survivors
+    time.sleep(1)
+    for p in all_pids:
+        try:
+            os.kill(p, signal.SIGKILL)
+        except (ProcessLookupError, PermissionError):
+            pass
+
+    success(f"Stopped {name} (PID {pid} + {len(all_pids) - 1} children)")
+
+
+def _collect_tree(pid: int) -> list[int]:
+    """Return all PIDs in the process tree rooted at *pid*, children first."""
+    import subprocess
+
+    children: list[int] = []
+    try:
+        result = subprocess.run(
+            ["pgrep", "-P", str(pid)],
+            capture_output=True,
+            text=True,
+        )
+        for child in result.stdout.strip().splitlines():
+            child_pid = int(child.strip())
+            children.extend(_collect_tree(child_pid))
+    except (ValueError, OSError):
+        pass
+    return children + [pid]
