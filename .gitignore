@@ -45,6 +45,7 @@ ducklake_data/
 # Dagster runtime state
 dagster_home/
 .tmp_dagster_home_*/
+.tycoon/dagster/
 
 # AI tool configs (machine-specific)
 .aider*

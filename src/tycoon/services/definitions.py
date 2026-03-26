@@ -68,6 +68,7 @@ def get_service_definitions() -> list[ServiceDef]:
             port=PORTS["dagster"],
             command=["dagster", "dev", "--port", str(PORTS["dagster"])],
             health_path="/server_info",
+            env={"DAGSTER_HOME": str(config.root / ".tycoon" / "dagster")},
         ),
         ServiceDef(
             name="nao",
