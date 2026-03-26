@@ -56,3 +56,6 @@ ai-workbench/
 .tycoon/nao/databases/
 .tycoon/nao/repos/
 .tycoon/nao/agent/
+
+# tycoon runtime state (PIDs, locks)
+.tycoon/run/

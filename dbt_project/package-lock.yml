@@ -1,0 +1,8 @@
+packages:
+  - git: https://github.com/dlt-hub/dlt-dbt-stripe.git
+    name: stripe_analytics
+    revision: 42e1df62b58d155eebbbb48c328af6eaff94b971
+  - git: https://github.com/dlt-hub/dlt-dbt-hubspot.git
+    name: hubspot
+    revision: d3a289a92f03b670e56a8af8e6c5e016ea95b3fe
+sha1_hash: 20543ed2180ac9efdef4b7e5f18a5e8423ff274f

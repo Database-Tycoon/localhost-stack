@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import json
+import os
 import signal
 import threading
+from pathlib import Path
 
 import typer
 
@@ -12,6 +15,24 @@ from tycoon.utils.console import console, error, header, info, success, warn
 
 # The three servers that run continuously and are not Dagster assets.
 _SERVER_NAMES = ["rill", "dagster", "nao"]
+
+_PID_FILE = Path(".tycoon") / "run" / "pids.json"
+
+
+def _pid_file() -> Path:
+    return config.root / _PID_FILE
+
+
+def write_pids(pids: dict[str, int]) -> None:
+    path = _pid_file()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(pids, indent=2))
+
+
+def clear_pids() -> None:
+    path = _pid_file()
+    if path.exists():
+        path.unlink()
 
 
 def start_cmd(
@@ -25,7 +46,7 @@ def start_cmd(
     """Start the Rill dashboard, Dagster orchestrator, and Nao AI agent.
 
     All three run as background processes in this session.
-    Press Ctrl-C to stop everything.
+    Press Ctrl-C or run `tycoon stop` to shut everything down.
     """
     from tycoon.services.manager import ServiceManager
 
@@ -42,10 +63,15 @@ def start_cmd(
     for name in targets:
         manager.start(name)
 
+    # Persist PIDs so `tycoon stop` can kill them from another terminal
+    pids = {name: proc.pid for name, proc in manager._processes.items()}
+    if pids:
+        write_pids(pids)
+
     console.print()
     _print_urls(targets)
     console.print()
-    info("Press [bold]Ctrl-C[/bold] to stop all servers.")
+    info("Press [bold]Ctrl-C[/bold] or run [bold]tycoon stop[/bold] to shut down.")
 
     shutdown = threading.Event()
     signal.signal(signal.SIGINT, lambda *_: shutdown.set())
@@ -55,6 +81,7 @@ def start_cmd(
     console.print()
     info("Shutting down...")
     manager.stop_all()
+    clear_pids()
     info("Done.")
 
 
@@ -77,7 +104,7 @@ def _preflight_checks(targets: list[str]) -> None:
             targets.remove("nao")
             return
         if not (config.nao_dir / "nao_config.yaml").exists():
-            warn("Nao has not been initialised. Run [bold]tycoon ask init && tycoon ask sync[/bold] first.")
+            warn("Nao not initialised. Run [bold]tycoon ask init && tycoon ask sync[/bold] first.")
             targets.remove("nao")
 
     if "dagster" in targets:
