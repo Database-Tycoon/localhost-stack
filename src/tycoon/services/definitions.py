@@ -60,7 +60,8 @@ def get_service_definitions() -> list[ServiceDef]:
         ServiceDef(
             name="rill",
             port=PORTS["rill"],
-            command=["rill", "start", str(config.rill_dir), "--port", "9009"],
+            command=["rill", "start", str(config.rill_dir), "--port", "9009", "--no-open"],
+            env={"CONNECTOR_DUCKDB_DSN": str(config.local_db)},
         ),
         ServiceDef(
             name="dagster",
