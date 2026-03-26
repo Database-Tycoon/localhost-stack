@@ -63,6 +63,21 @@ def get_service_definitions() -> list[ServiceDef]:
             command=["rill", "start", str(config.rill_dir), "--port", "9009"],
         ),
         ServiceDef(
+            name="dagster",
+            port=PORTS["dagster"],
+            command=["dagster", "dev", "--port", str(PORTS["dagster"])],
+            health_path="/server_info",
+        ),
+        ServiceDef(
+            name="nao",
+            port=PORTS["nao"],
+            command=[
+                "python", "-m", "nao_core", "chat",
+                "--port", str(PORTS["nao"]),
+            ],
+            cwd=str(config.nao_dir),
+        ),
+        ServiceDef(
             name="tycoon",
             port=PORTS["tycoon"],
             command=[],  # Managed separately via uvicorn
