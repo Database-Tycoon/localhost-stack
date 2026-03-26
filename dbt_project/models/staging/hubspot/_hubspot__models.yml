@@ -24,7 +24,7 @@ models:
   - name: tickets
     description: Passthrough view over raw.raw_hubspot.tickets for the dlt-dbt-hubspot package.
 
-  - name: _dlt_loads
+  - name: hubspot__dlt_loads
     description: >
       Passthrough view over raw.raw_hubspot._dlt_loads. Exposes dlt load tracking
       in hubspot_staging so the package's dlt_active_load_ids model can find it.
