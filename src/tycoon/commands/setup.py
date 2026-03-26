@@ -11,7 +11,7 @@ import typer
 
 from tycoon.config import config
 from tycoon.utils.console import console, header, info, success, error, warn
-from tycoon.utils.duckdb_utils import db_file_size_mb, remove_wal
+from tycoon.utils.duckdb_utils import remove_wal
 
 
 def _run(cmd: list[str], description: str) -> None:
@@ -25,20 +25,13 @@ def _run(cmd: list[str], description: str) -> None:
 
 
 def setup_cmd(
-    quick: Annotated[
-        bool,
+    max_records: Annotated[
+        int,
         typer.Option(
-            "--quick",
-            help="Ingest only 5000 records per dataset; skip 2023-2024 bus speeds.",
+            "--max-records",
+            help="Limit ingestion to N records per dataset. Omit for all records.",
         ),
-    ] = False,
-    full: Annotated[
-        bool,
-        typer.Option(
-            "--full",
-            help="Ingest all records (default behavior).",
-        ),
-    ] = False,
+    ] = 0,
     skip_ingest: Annotated[
         bool,
         typer.Option(
@@ -51,11 +44,7 @@ def setup_cmd(
     header("Tycoon Environment Setup")
     start = time.time()
 
-    if quick and full:
-        error("Cannot specify both --quick and --full.")
-        raise typer.Exit(1)
-
-    mode = "quick" if quick else "full"
+    mode = f"max {max_records:,} records" if max_records else "full"
     info(f"Mode: {mode}" + (" (skip-ingest)" if skip_ingest else ""))
 
     # 1. Ensure data directory exists
@@ -78,9 +67,7 @@ def setup_cmd(
 
         sources = config.sources
         total = len(sources)
-        ingest_flags: list[str] = []
-        if quick:
-            ingest_flags = ["--max-records", "5000"]
+        ingest_flags = ["--max-records", str(max_records)] if max_records else []
 
         for i, name in enumerate(sources, 1):
             console.rule(f"[bold cyan]Step {i}/{total} — {name}")
@@ -108,12 +95,9 @@ def setup_cmd(
     else:
         info("No dbt project found, skipping transform step.")
 
-    # 5. Summary
+    # 5. Health check
     elapsed = time.time() - start
     console.rule("[bold green]Setup Complete")
-
-    raw_size = db_file_size_mb(config.raw_db)
-    local_size = db_file_size_mb(config.local_db)
-    info(f"Raw database:   {raw_size:.1f} MB" if raw_size else "Raw database:   not found")
-    info(f"Local database: {local_size:.1f} MB" if local_size else "Local database: not found")
     success(f"Setup finished in {elapsed:.1f}s")
+    console.print()
+    _run([*tycoon_bin, "check"], "Stack health check")

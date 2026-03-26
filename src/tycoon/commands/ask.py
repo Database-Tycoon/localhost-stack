@@ -82,18 +82,34 @@ def ask_sync(
 @app.command("chat")
 def ask_chat(
     port: int = typer.Option(0, help="Port override (default: from tycoon.yml or 5005)"),
-    sync_first: bool = typer.Option(False, "--sync-first", help="Run sync before launching chat"),
 ) -> None:
-    """Launch the Nao chat UI in your browser."""
+    """Launch the Nao chat UI in your browser.
+
+    Automatically runs init and sync on first use if not already done.
+    """
     _require_project()
     _require_nao()
 
-    if not (config.nao_dir / "nao_config.yaml").exists():
-        error("No nao_config.yaml found. Run [bold]tycoon ask init[/bold] first.")
-        raise typer.Exit(1)
+    # Auto-init if no config exists yet
+    nao_config = config.nao_dir / "nao_config.yaml"
+    if not nao_config.exists():
+        info("No nao_config.yaml found — running [bold]tycoon ask init[/bold] automatically...")
+        from tycoon.nao import write_nao_project
+        write_nao_project(config)
+        success(f"Nao config written to [bold]{config.nao_dir}[/bold]")
 
-    if sync_first:
-        ask_sync()
+    # Auto-sync if context DB hasn't been built yet
+    context_ready = (config.nao_dir / "databases").exists()
+    if not context_ready:
+        info("Context not yet synced — running [bold]tycoon ask sync[/bold] automatically...")
+        result = subprocess.run(
+            [sys.executable, "-m", "nao_core", "sync"],
+            cwd=str(config.nao_dir),
+            env=_nao_env(),
+        )
+        if result.returncode != 0:
+            error("nao sync failed. Run [bold]tycoon ask sync[/bold] to debug.")
+            raise typer.Exit(result.returncode)
 
     # Resolve port: CLI flag > tycoon.yml > default
     resolved_port = port
