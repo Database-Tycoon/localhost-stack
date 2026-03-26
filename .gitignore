@@ -15,6 +15,7 @@ venv/
 *.duckdb
 *.duckdb.wal
 data/
+!data/README.md
 
 # dbt
 transformation/target/
