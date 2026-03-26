@@ -31,6 +31,10 @@ dagster = [
     "dagster-dbt>=0.25.0",
     "dagster-dlt>=0.25.0",
 ]
+ask = [
+    "nao-core>=0.0.59",
+    "ibis-framework[duckdb]>=9.0.0",
+]
 
 [dependency-groups]
 dev = ["pytest>=8.0.0"]

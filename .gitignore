@@ -50,3 +50,8 @@ dagster_home/
 .config/
 .gemini/
 ai-workbench/
+
+# Nao analytics agent (auto-generated context, not source code)
+.tycoon/nao/databases/
+.tycoon/nao/repos/
+.tycoon/nao/agent/
