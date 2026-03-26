@@ -44,8 +44,7 @@ if ingestion_assets:
 
     full_pipeline_job = define_asset_job(
         name="full_pipeline_job",
-        selection=([a.key for a in ingestion_assets])
-        + [dbt_project_assets, rill_fct_bus_segment_speeds],
+        selection=ingestion_assets + [dbt_project_assets, rill_fct_bus_segment_speeds],
         description="Run full pipeline: ingest all sources then build dbt models.",
     )
     all_jobs.append(full_pipeline_job)

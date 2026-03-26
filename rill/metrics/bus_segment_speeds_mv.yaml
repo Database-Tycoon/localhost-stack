@@ -1,0 +1,23 @@
+type: metrics_view
+model: fct_bus_segment_speeds
+timeseries: metric_date
+dimensions:
+  - column: route_id
+    label: Route
+  - column: segment_id
+    label: Segment
+  - column: hour_of_day
+    label: Hour
+measures:
+  - expression: "avg(avg_speed_mph)"
+    label: "Avg Speed (mph)"
+    format: "#,##0.0"
+  - expression: "avg(speed_variability)"
+    label: "Avg Speed Variability"
+    format: "#,##0.0"
+  - expression: "sum(trip_count)"
+    label: "Total Trips"
+    format: "#,##0"
+  - expression: "count(*)"
+    label: "Records"
+    format: "#,##0"

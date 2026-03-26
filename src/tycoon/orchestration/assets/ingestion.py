@@ -9,10 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import dlt
 from dagster import (
-    AssetExecutionContext,
-    AssetKey,
     MaterializeResult,
     asset,
 )
@@ -33,7 +30,7 @@ def _make_ingestion_asset(source_name: str):
         tags={"dagster/concurrency_key": "duckdb_writer"},
         description=f"Ingest raw data from '{source_name}' via dlt.",
     )
-    def _ingest(context: AssetExecutionContext) -> MaterializeResult:
+    def _ingest(context) -> MaterializeResult:
         cfg = TycoonConfig(project_root=PROJECT_DIR)
         source_config = cfg.sources[source_name]
 
@@ -60,13 +57,10 @@ def _make_ingestion_asset(source_name: str):
 
 def build_ingestion_assets() -> list:
     """Read tycoon.yml and build one asset per registered source."""
-    try:
-        cfg = TycoonConfig(project_root=PROJECT_DIR)
-        if not cfg.has_project_file:
-            return []
-        return [_make_ingestion_asset(name) for name in cfg.sources]
-    except Exception:
+    cfg = TycoonConfig(project_root=PROJECT_DIR)
+    if not cfg.has_project_file:
         return []
+    return [_make_ingestion_asset(name) for name in cfg.sources]
 
 
 ingestion_assets = build_ingestion_assets()

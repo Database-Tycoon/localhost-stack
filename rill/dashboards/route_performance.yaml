@@ -1,38 +1,5 @@
 type: explore
 title: "Route Performance"
 description: "Daily route reliability grades, speed, and variability"
-model: fct_route_daily_performance
-dimensions:
-  - column: route_id
-    label: Route
-  - column: metric_date
-    label: Date
-    type: timestamp
-  - column: reliability_grade
-    label: Reliability Grade
-measures:
-  - expression: "avg(avg_speed_mph)"
-    label: "Avg Speed (mph)"
-    format: "#,##0.0"
-  - expression: "count(*)"
-    label: "Records"
-    format: "#,##0"
-  - expression: "avg(speed_variability)"
-    label: "Avg Speed Variability"
-    format: "#,##0.0"
-  - expression: "countif(reliability_grade = 'A')"
-    label: "Grade A Count"
-    format: "#,##0"
-  - expression: "countif(reliability_grade = 'B')"
-    label: "Grade B Count"
-    format: "#,##0"
-  - expression: "countif(reliability_grade = 'C')"
-    label: "Grade C Count"
-    format: "#,##0"
-  - expression: "countif(reliability_grade = 'D')"
-    label: "Grade D Count"
-    format: "#,##0"
-  - expression: "countif(reliability_grade = 'F')"
-    label: "Grade F Count"
-    format: "#,##0"
+metrics_view: route_performance_mv
 default_time_range: P3M

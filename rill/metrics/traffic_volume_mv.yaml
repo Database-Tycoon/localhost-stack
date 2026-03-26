@@ -1,0 +1,18 @@
+type: metrics_view
+model: fct_traffic_volume_patterns
+timeseries: date
+dimensions:
+  - column: segment_id
+    label: Segment
+  - column: time_period
+    label: Time Period
+measures:
+  - expression: "sum(total_volume)"
+    label: "Total Volume"
+    format: "#,##0"
+  - expression: "avg(avg_volume)"
+    label: "Avg Volume"
+    format: "#,##0.0"
+  - expression: "count(*)"
+    label: "Records"
+    format: "#,##0"
