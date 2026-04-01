@@ -148,6 +148,50 @@ CATALOG: dict[str, CatalogEntry] = {
         default_schema="raw_notion",
         docs_url="https://dlthub.com/docs/dlt-ecosystem/verified-sources/notion",
     ),
+    "rest_api": CatalogEntry(
+        id="rest_api",
+        display_name="REST API",
+        category="Generic",
+        description="Any REST API — defaults to the PokéAPI demo (no auth needed)",
+        resources=["pokemon", "berry", "type"],
+        credentials=[],
+        config_fields=[
+            ConfigField(
+                key="base_url",
+                label="API base URL",
+                hint='e.g. "https://pokeapi.co/api/v2/" — leave blank to use the PokéAPI demo',
+                required=False,
+                default="https://pokeapi.co/api/v2/",
+            ),
+            ConfigField(
+                key="resources",
+                label="Resource names (comma-separated)",
+                hint='e.g. "pokemon,berry,type" — each becomes a DuckDB table',
+                required=False,
+                default="pokemon,berry,type",
+            ),
+        ],
+        default_schema="raw_rest",
+        docs_url="https://dlthub.com/docs/dlt-ecosystem/verified-sources/rest_api",
+    ),
+    "filesystem": CatalogEntry(
+        id="filesystem",
+        display_name="CSV / Local Files",
+        category="Generic",
+        description="Load CSV files from a local directory into DuckDB",
+        resources=["files"],
+        credentials=[],
+        config_fields=[
+            ConfigField(
+                key="path",
+                label="Directory or file path (glob supported)",
+                hint='e.g. "~/data/exports/" or "/tmp/sales*.csv"',
+                required=True,
+            ),
+        ],
+        default_schema="raw_files",
+        docs_url="https://dlthub.com/docs/dlt-ecosystem/verified-sources/filesystem",
+    ),
 }
 
 

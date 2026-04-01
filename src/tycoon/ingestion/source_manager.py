@@ -131,6 +131,56 @@ def run_pipeline(name, source_config, raw_db_path, max_records=None):
 """,
 }
 
+    "rest_api": '''\
+from __future__ import annotations
+from typing import Any
+import dlt
+from dlt.sources.rest_api import rest_api_source
+
+def run_pipeline(name, source_config, raw_db_path, max_records=None):
+    cfg = source_config.config
+    base_url = cfg.get("base_url", "https://pokeapi.co/api/v2/")
+    raw_resources = cfg.get("resources", "pokemon,berry,type")
+    resource_names = [r.strip() for r in raw_resources.split(",") if r.strip()]
+    source = rest_api_source({
+        "client": {"base_url": base_url},
+        "resources": resource_names,
+    })
+    if max_records:
+        source = source.add_limit(max_records)
+    pipeline = dlt.pipeline(
+        pipeline_name=name,
+        destination=dlt.destinations.duckdb(str(raw_db_path)),
+        dataset_name=source_config.schema_name,
+    )
+    return pipeline, pipeline.run(source)
+''',
+    "filesystem": '''\
+from __future__ import annotations
+from pathlib import Path
+from typing import Any
+import dlt
+from dlt.sources.filesystem import filesystem, read_csv
+
+def run_pipeline(name, source_config, raw_db_path, max_records=None):
+    cfg = source_config.config
+    path = cfg.get("path", "")
+    expanded = str(Path(path).expanduser())
+    source = filesystem(bucket_url=expanded, file_glob="**/*.csv") | read_csv()
+    if max_records:
+        source = source.add_limit(max_records)
+    pipeline = dlt.pipeline(
+        pipeline_name=name,
+        destination=dlt.destinations.duckdb(str(raw_db_path)),
+        dataset_name=source_config.schema_name,
+    )
+    return pipeline, pipeline.run(source)
+''',
+}
+
+# Sources that ship with dlt itself — no `dlt init` needed.
+_BUILTIN_SOURCES: set[str] = {"rest_api", "filesystem"}
+
 # Maps catalog source type → dlt init source name (they sometimes differ)
 _DLT_INIT_NAME: dict[str, str] = {
     "github": "github",
@@ -142,20 +192,34 @@ _DLT_INIT_NAME: dict[str, str] = {
 
 
 def is_source_installed(source_type: str) -> bool:
-    """Return True if the source package exists in SOURCES_DIR."""
+    """Return True if the source is ready to run."""
+    if source_type in _BUILTIN_SOURCES:
+        # Built-ins just need their _run.py shim written
+        return (SOURCES_DIR / source_type / "_run.py").exists()
     dlt_name = _DLT_INIT_NAME.get(source_type, source_type)
     source_pkg = SOURCES_DIR / dlt_name
     return source_pkg.is_dir() and (source_pkg / "__init__.py").exists()
 
 
 def install_source(source_type: str) -> bool:
-    """Run `dlt init <source> duckdb` into SOURCES_DIR, then write a _run.py shim.
+    """Install a source and write its _run.py shim.
+
+    For built-in dlt sources (rest_api, filesystem) this just writes the shim.
+    For verified sources it runs `dlt init <source> duckdb` first.
 
     Returns True on success, False on failure.
     """
-    dlt_name = _DLT_INIT_NAME.get(source_type, source_type)
     SOURCES_DIR.mkdir(parents=True, exist_ok=True)
 
+    if source_type in _BUILTIN_SOURCES:
+        shim = _SHIMS.get(source_type)
+        if shim:
+            shim_dir = SOURCES_DIR / source_type
+            shim_dir.mkdir(exist_ok=True)
+            (shim_dir / "_run.py").write_text(shim)
+        return True
+
+    dlt_name = _DLT_INIT_NAME.get(source_type, source_type)
     result = subprocess.run(
         [sys.executable, "-m", "dlt", "init", dlt_name, "duckdb"],
         cwd=SOURCES_DIR,
@@ -166,7 +230,6 @@ def install_source(source_type: str) -> bool:
     if result.returncode != 0:
         return False
 
-    # Write the _run.py shim into the downloaded source package
     shim = _SHIMS.get(dlt_name)
     if shim:
         shim_path = SOURCES_DIR / dlt_name / "_run.py"
@@ -177,5 +240,7 @@ def install_source(source_type: str) -> bool:
 
 def get_run_module_path(source_type: str) -> str:
     """Return the dotted module path for the _run shim, e.g. 'github._run'."""
+    if source_type in _BUILTIN_SOURCES:
+        return f"{source_type}._run"
     dlt_name = _DLT_INIT_NAME.get(source_type, source_type)
     return f"{dlt_name}._run"
