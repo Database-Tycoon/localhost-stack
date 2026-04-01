@@ -129,9 +129,7 @@ def run_pipeline(name, source_config, raw_db_path, max_records=None):
     )
     return pipeline, pipeline.run(source)
 """,
-}
-
-    "rest_api": '''\
+    "rest_api": """\
 from __future__ import annotations
 from typing import Any
 import dlt
@@ -154,8 +152,8 @@ def run_pipeline(name, source_config, raw_db_path, max_records=None):
         dataset_name=source_config.schema_name,
     )
     return pipeline, pipeline.run(source)
-''',
-    "filesystem": '''\
+""",
+    "filesystem": """\
 from __future__ import annotations
 from pathlib import Path
 from typing import Any
@@ -175,7 +173,7 @@ def run_pipeline(name, source_config, raw_db_path, max_records=None):
         dataset_name=source_config.schema_name,
     )
     return pipeline, pipeline.run(source)
-''',
+""",
 }
 
 # Sources that ship with dlt itself — no `dlt init` needed.

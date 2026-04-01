@@ -179,6 +179,34 @@ _CONFIG_PROMPTERS = {
 }
 
 
+def _derive_source_identity(source_type: str, cfg: dict) -> tuple[str, str]:
+    """Auto-derive (source_name, schema_name) from config for sources that support it."""
+    from urllib.parse import urlparse
+
+    if source_type == "rest_api":
+        base_url = cfg.get("base_url", "")
+        try:
+            host = urlparse(base_url).hostname or ""
+            parts = host.split(".")
+            slug = parts[-2] if len(parts) >= 2 else parts[0]
+        except Exception:
+            slug = "api"
+        slug = slug.replace("-", "_")
+        return slug, f"raw_{slug}"
+
+    if source_type == "filesystem":
+        path = cfg.get("path", "")
+        slug = Path(path).expanduser().stem or Path(path).expanduser().name or "files"
+        slug = slug.replace("-", "_")
+        return slug, f"raw_{slug}"
+
+    raise ValueError(f"No auto-naming for {source_type}")
+
+
+# Sources that get their name/schema derived from config rather than prompted.
+_AUTO_NAMED_SOURCES: set[str] = {"rest_api", "filesystem"}
+
+
 @app.command("add")
 def add_source(
     source_type: str = typer.Argument(help="Source type — run 'tycoon sources catalog' to see all options"),
@@ -195,17 +223,22 @@ def add_source(
     else:
         header(f"Add source: {source_type}")
 
-    default_name = f"my-{source_type}" if catalog_entry else source_type
-    source_name = typer.prompt("Source name", default=default_name)
-
-    default_schema = catalog_entry.default_schema if catalog_entry else f"raw_{source_name.replace('-', '_')}"
-    schema_name = typer.prompt("Schema name", default=default_schema)
-
-    if catalog_entry:
+    if catalog_entry and source_type in _AUTO_NAMED_SOURCES:
+        # Collect config first so we can derive the name from it
         source_config = _prompt_catalog_config(catalog_entry)
+        source_name, schema_name = _derive_source_identity(source_type, source_config)
+        info(f"Source name: [bold]{source_name}[/bold]")
+        info(f"Schema:      [bold]{schema_name}[/bold]")
     else:
-        prompter = _CONFIG_PROMPTERS.get(source_type, _prompt_generic_config)
-        source_config = prompter()
+        default_name = f"my-{source_type}" if catalog_entry else source_type
+        source_name = typer.prompt("Source name", default=default_name)
+        default_schema = catalog_entry.default_schema if catalog_entry else f"raw_{source_name.replace('-', '_')}"
+        schema_name = typer.prompt("Schema name", default=default_schema)
+        if catalog_entry:
+            source_config = _prompt_catalog_config(catalog_entry)
+        else:
+            prompter = _CONFIG_PROMPTERS.get(source_type, _prompt_generic_config)
+            source_config = prompter()
 
     new_source = SourceConfig(
         type=source_type,
