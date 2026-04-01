@@ -9,11 +9,34 @@ import tycoon
 
 _COMMAND_ORDER = ["init", "data", "ai", "start", "stop", "run"]
 
+_SECTIONS = {
+    "init":  "Project",
+    "data":  "Data Pipeline",
+    "ai":    "AI",
+    "start": "Services",
+    "stop":  "Services",
+    "run":   "Tools",
+}
+
 
 class _OrderedGroup(TyperGroup):
     def list_commands(self, ctx: object) -> list[str]:
         commands = super().list_commands(ctx)
         return sorted(commands, key=lambda c: _COMMAND_ORDER.index(c) if c in _COMMAND_ORDER else 99)
+
+    def format_commands(self, ctx: object, formatter: object) -> None:
+        seen: dict[str, list[tuple[str, str]]] = {}
+        for name in self.list_commands(ctx):
+            cmd = self.commands.get(name)
+            if cmd is None or getattr(cmd, "hidden", False):
+                continue
+            section = _SECTIONS.get(name, "Commands")
+            seen.setdefault(section, []).append(
+                (name, cmd.get_short_help_str(limit=formatter.width))
+            )
+        for section, rows in seen.items():
+            with formatter.section(section):
+                formatter.write_dl(rows)
 
 
 app = typer.Typer(
@@ -21,7 +44,7 @@ app = typer.Typer(
     help="Database Tycoon — local-first analytics CLI for exploring any dataset.",
     no_args_is_help=True,
     pretty_exceptions_enable=False,
-    rich_markup_mode="rich",
+    rich_markup_mode=None,
     cls=_OrderedGroup,
 )
 
@@ -52,13 +75,12 @@ from tycoon.commands.run import run_cmd
 from tycoon.commands.start import start_cmd
 from tycoon.commands.stop import stop_cmd
 
-app.command(name="init", rich_help_panel="Project")(init_cmd)
-app.add_typer(data.app, name="data", rich_help_panel="Data Pipeline")
-app.add_typer(ai.app, name="ai", rich_help_panel="AI")
-app.command(name="start", rich_help_panel="Services")(start_cmd)
-app.command(name="stop", rich_help_panel="Services")(stop_cmd)
+app.command(name="init")(init_cmd)
+app.add_typer(data.app, name="data")
+app.add_typer(ai.app, name="ai")
+app.command(name="start")(start_cmd)
+app.command(name="stop")(stop_cmd)
 app.command(
     name="run",
-    rich_help_panel="Tools",
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )(run_cmd)
