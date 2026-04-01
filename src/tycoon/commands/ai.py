@@ -15,7 +15,7 @@ from tycoon.ai.memory import append_memory, get_memory_path, read_memory, write_
 from tycoon.ai.prompts import build_system_prompt
 from tycoon.ai.repl import run_repl
 from tycoon.config import config
-from tycoon.utils.console import ai_hint, console, error, header, info, status_table, success, warn
+from tycoon.utils.console import ai_hint, console, error, header, info, next_steps, status_table, success, warn
 
 app = typer.Typer(help="Local LLM pipeline assistant (LM Studio).")
 
@@ -179,7 +179,11 @@ def setup() -> None:
         raise typer.Exit(1)
     success(f"Model loaded: [bold]{loaded[0].id}[/bold]")
 
-    success("AI assistant is ready! Try: [bold]tycoon ai status[/bold]")
+    success("AI assistant is ready!")
+    next_steps(
+        ("tycoon ai ask \"explain my pipeline\"", "ask a question about your project"),
+        ("tycoon ai pipeline document-staging --model <model>", "document and test a staging model"),
+    )
 
 
 @app.command(name="ask")
@@ -331,6 +335,10 @@ def fix(
 
     if passed:
         success("All dbt tests are passing.")
+        next_steps(
+            ("tycoon transform run", "rebuild dbt models with the fixes applied"),
+            ("tycoon start --only rill", "verify results in the dashboard"),
+        )
     else:
         error("Could not fix all dbt test failures automatically.")
         ai_hint("what else could be causing my dbt test failures?")
@@ -707,4 +715,8 @@ def pipeline_cmd(
             f"Pipeline '{name}' complete: "
             f"{passed_steps}/{total_steps} steps passed, "
             f"{total_files} file(s) written."
+        )
+        next_steps(
+            ("tycoon transform run", "run dbt to apply the generated models"),
+            ("tycoon start --only rill", "explore results in Rill"),
         )

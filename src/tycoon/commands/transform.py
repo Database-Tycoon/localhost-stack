@@ -9,7 +9,7 @@ from dagster_dbt import DbtCliResource
 
 from tycoon.config import config
 from tycoon.dbt import dbt_project
-from tycoon.utils.console import ai_hint, console, header, success, error
+from tycoon.utils.console import ai_hint, console, header, next_steps, success, error
 
 app = typer.Typer(
     help="Run dbt transformations against the local DuckDB warehouse.",
@@ -78,6 +78,10 @@ def run(
 
     if rc == 0:
         success("dbt run completed successfully.")
+        next_steps(
+            ("tycoon start --only rill", "explore data in the Rill dashboard"),
+            ("tycoon ai pipeline document-staging --model <model>", "document and test a model with AI"),
+        )
     else:
         error(f"dbt run exited with code {rc}.")
         raise typer.Exit(rc)

@@ -13,7 +13,7 @@ from rich.console import Console
 from rich.table import Table
 
 from tycoon.config import config
-from tycoon.utils.console import error, info, success, warn
+from tycoon.utils.console import error, info, next_steps, success, warn
 
 app = typer.Typer(help="AI analytics agent — query your data in natural language.")
 skills_app = typer.Typer(help="Manage Nao skills.")
@@ -107,9 +107,10 @@ def ask_init() -> None:
     write_nao_project(config)
 
     success(f"Nao config written to [bold]{config.nao_dir}[/bold]")
-    info("Next steps:")
-    info("  1. [bold]tycoon ask sync[/bold]  — build DB + dbt context (~30s first run)")
-    info("  2. [bold]tycoon ask chat[/bold]  — launch the query UI")
+    next_steps(
+        ("tycoon ask sync", "build DB and dbt context (~30s first run)"),
+        ("tycoon ask chat", "launch the query UI"),
+    )
 
 
 @app.command("sync")
@@ -139,7 +140,10 @@ def ask_sync(
         error("nao sync failed.")
         raise typer.Exit(result.returncode)
 
-    success("Context synced. Run [bold]tycoon ask chat[/bold] to start querying.")
+    success("Context synced.")
+    next_steps(
+        ("tycoon ask chat", "start querying your data in natural language"),
+    )
 
 
 @app.command("chat")
@@ -238,7 +242,10 @@ def skills_new(
 
     skill_path.write_text(_SKILL_TEMPLATE.format(name=name))
     success(f"Skill created: [bold]{skill_path}[/bold]")
-    info("Edit the file to add your SQL and description.")
+    next_steps(
+        ("tycoon ask skills list", "see all available skills"),
+        ("tycoon ask chat", "start a chat session to use the skill"),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -307,3 +314,6 @@ def mcp_add(
     success(f"Added MCP server [bold]{server}[/bold] to [bold]{mcp_path}[/bold]")
     if server == "metabase":
         info("Set METABASE_URL and METABASE_API_KEY environment variables before starting the agent.")
+    next_steps(
+        ("tycoon ask chat", "restart the agent to load the new MCP server"),
+    )

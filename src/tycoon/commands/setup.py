@@ -10,7 +10,7 @@ from typing import Annotated
 import typer
 
 from tycoon.config import config
-from tycoon.utils.console import console, header, info, success, error, warn
+from tycoon.utils.console import console, header, info, next_steps, success, error, warn
 from tycoon.utils.duckdb_utils import remove_wal
 
 
@@ -101,3 +101,7 @@ def setup_cmd(
     success(f"Setup finished in {elapsed:.1f}s")
     console.print()
     _run([*tycoon_bin, "check"], "Stack health check")
+    next_steps(
+        ("tycoon start", "launch Rill, Dagster, and the web UI"),
+        ("tycoon ask init", "set up the AI analytics agent"),
+    )

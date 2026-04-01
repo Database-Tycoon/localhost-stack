@@ -12,7 +12,7 @@ from tycoon.scaffolding.templates import (
     scaffold_blank_project,
     scaffold_from_template,
 )
-from tycoon.utils.console import console, error, header, info, success, warn
+from tycoon.utils.console import console, error, header, info, next_steps, success, warn
 
 
 def init_cmd(
@@ -74,6 +74,8 @@ def init_cmd(
 
     console.print()
     success(f"Project '{project_name}' initialized successfully!")
-    info("Next steps:")
-    info("  1. Edit tycoon.yml to add your data sources")
-    info("  2. Run 'tycoon setup' to ingest data and build models")
+    next_steps(
+        ("tycoon sources catalog", "browse available data sources"),
+        ("tycoon setup", "ingest the built-in NYC demo data"),
+        ("tycoon ask init", "set up the AI analytics agent"),
+    )

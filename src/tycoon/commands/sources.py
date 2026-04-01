@@ -10,7 +10,7 @@ from rich.table import Table
 from tycoon.config import config
 from tycoon.ingestion.catalog import CATALOG, CatalogEntry
 from tycoon.project import SourceConfig, load_project, save_project
-from tycoon.utils.console import console, error, header, info, success, warn
+from tycoon.utils.console import console, error, header, info, next_steps, success, warn
 
 app = typer.Typer(help="Manage registered data sources.")
 
@@ -265,11 +265,13 @@ def add_source(
 
     if catalog_entry:
         _maybe_install_catalog_source(source_type)
-        info(f"Run it with: [bold]tycoon ingest run {source_name}[/bold]")
-        if catalog_entry.docs_url:
-            info(f"Docs: {catalog_entry.docs_url}")
     else:
         _maybe_install_dlt_extra(source_type)
+
+    next_steps(
+        (f"tycoon ingest run {source_name}", "load data into DuckDB"),
+        ("tycoon sources list", "see all registered sources"),
+    )
 
 
 def _maybe_install_catalog_source(source_type: str) -> None:
@@ -341,6 +343,9 @@ def install_source_cmd(
     info(f"Running dlt init {source_type} ...")
     if install_source(source_type):
         success(f"Source [bold]{source_type}[/bold] installed to ~/.tycoon/sources/")
+        next_steps(
+            (f"tycoon ingest run {source_type}", "run the pipeline"),
+        )
     else:
         error(f"Failed to install [bold]{source_type}[/bold]. Check that dlt is installed.")
         raise typer.Exit(1)

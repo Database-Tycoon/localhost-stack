@@ -43,3 +43,16 @@ def header(msg: str) -> None:
 def ai_hint(suggestion: str) -> None:
     """Print a hint suggesting an AI command for follow-up."""
     console.print(f"[dim]Tip: [bold]tycoon ai ask \"{suggestion}\"[/bold][/dim]")
+
+
+def next_steps(*suggestions: tuple[str, str]) -> None:
+    """Print 1–3 suggested next commands after a successful operation.
+
+    Each suggestion is a (command, description) tuple.
+    """
+    if not suggestions:
+        return
+    console.print()
+    console.print("[dim]What's next?[/dim]")
+    for cmd, desc in suggestions:
+        console.print(f"  [cyan bold]{cmd}[/cyan bold]  [dim]{desc}[/dim]")

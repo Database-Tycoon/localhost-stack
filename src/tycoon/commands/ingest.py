@@ -7,7 +7,7 @@ from typing import Annotated, Optional
 import typer
 
 from tycoon.config import config
-from tycoon.utils.console import ai_hint, error, header, info, success, warn
+from tycoon.utils.console import ai_hint, error, header, info, next_steps, success, warn
 
 app = typer.Typer(
     help="Ingest raw data from registered sources.",
@@ -58,6 +58,10 @@ def run_source(
             max_records=max_records,
         )
         success(f"{source_name} load complete. {load_info}")
+        next_steps(
+            ("tycoon transform run", "run dbt models on the ingested data"),
+            ("tycoon start --only rill", "open the Rill dashboard"),
+        )
     except Exception as exc:
         error(f"{source_name} pipeline failed: {exc}")
         ai_hint(f"help me debug the {source_name} ingestion")
@@ -106,3 +110,7 @@ def ingest_all(
             raise typer.Exit(1) from exc
 
     success("All ingestion pipelines completed successfully.")
+    next_steps(
+        ("tycoon transform run", "run dbt models on the ingested data"),
+        ("tycoon start --only rill", "open the Rill dashboard"),
+    )
