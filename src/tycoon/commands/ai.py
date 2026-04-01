@@ -720,3 +720,9 @@ def pipeline_cmd(
             ("tycoon transform run", "run dbt to apply the generated models"),
             ("tycoon start --only rill", "explore results in Rill"),
         )
+
+
+# Wire ask as a sub-group of ai
+from tycoon.commands import ask as _ask_module  # noqa: E402
+
+app.add_typer(_ask_module.app, name="ask")
