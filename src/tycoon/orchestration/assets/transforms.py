@@ -6,7 +6,6 @@ as a Dagster asset with full lineage.
 
 from __future__ import annotations
 
-from dagster import AssetExecutionContext
 from dagster_dbt import DbtCliResource, dbt_assets
 
 from tycoon.dbt import dbt_project

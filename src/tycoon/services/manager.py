@@ -6,7 +6,6 @@ import os
 import signal
 import subprocess
 import time
-from typing import Callable
 
 from tycoon.services.definitions import ServiceDef, get_service_definitions
 from tycoon.utils.console import error, info, success, warn

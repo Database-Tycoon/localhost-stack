@@ -10,7 +10,7 @@ import re
 import subprocess
 from pathlib import Path
 
-from tycoon.utils.console import console, info, success, warn, error
+from tycoon.utils.console import console, info, success, warn
 
 
 # Matches model names from dbt output lines like:

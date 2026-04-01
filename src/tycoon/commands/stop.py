@@ -7,7 +7,7 @@ import signal
 
 import typer
 
-from tycoon.utils.console import error, info, success, warn
+from tycoon.utils.console import info, success, warn
 
 _SERVER_PORTS = {"rill": 9009, "dagster": 3000, "nao": 5005}
 
@@ -79,7 +79,6 @@ def _stop_via_ports(targets: list[str]) -> None:
 
 def _kill_pid(name: str, pid: int) -> None:
     """Kill *pid* and all of its descendants (SIGTERM, then SIGKILL stragglers)."""
-    import subprocess
     import time
 
     # Collect the full process tree (children first, then the root)

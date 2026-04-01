@@ -11,7 +11,7 @@ from rich.table import Table
 
 from tycoon.config import config
 from tycoon.utils.console import console, header, info, success, error, warn, status_table
-from tycoon.utils.duckdb_utils import db_file_size_mb, get_tables, get_row_count, remove_wal
+from tycoon.utils.duckdb_utils import db_file_size_mb, get_tables, get_row_count
 
 app = typer.Typer(
     help="Database inspection, querying, and cleanup.",

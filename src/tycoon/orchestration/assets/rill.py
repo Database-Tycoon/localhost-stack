@@ -3,7 +3,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from dagster import AssetExecutionContext, asset
+from dagster import asset
 
 # Define the project directory
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent

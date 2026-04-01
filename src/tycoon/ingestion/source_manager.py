@@ -11,7 +11,6 @@ from __future__ import annotations
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
 
 SOURCES_DIR = Path.home() / ".tycoon" / "sources"
 
