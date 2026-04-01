@@ -96,10 +96,10 @@ This is harmless — there's a `dagster.yaml` in the project root (for workspace
 
 **Pipeline hangs or times out**
 - Likely a large dataset; use `--max-records 100` to cap it
-- Command: `uv run tycoon ingest run <source> --max-records 100`
+- Command: `uv run tycoon data ingest run <source> --max-records 100`
 
 **`RuntimeError: Unknown source type`**
-- The source isn't installed: `uv run tycoon sources install <source_name>`
+- The source isn't installed: `uv run tycoon data sources install <source_name>`
 
 **DuckDB locking error** (`Could not set lock on file`)
 - Only one process can write to DuckDB at a time
@@ -109,7 +109,7 @@ This is harmless — there's a `dagster.yaml` in the project root (for workspace
 **`ModuleNotFoundError` for a catalog source**
 - The `~/.tycoon/sources/` directory isn't on sys.path or the source isn't installed
 - Check: `ls ~/.tycoon/sources/`
-- Fix: `uv run tycoon sources install <name>`
+- Fix: `uv run tycoon data sources install <name>`
 
 ---
 
@@ -117,8 +117,8 @@ This is harmless — there's a `dagster.yaml` in the project root (for workspace
 
 **`Relation not found` in staging models**
 - The raw DuckDB schema is empty — ingestion hasn't run yet or failed
-- Check raw DB: `uv run tycoon db stats`
-- Fix: `uv run tycoon ingest run all --max-records 500`
+- Check raw DB: `uv run tycoon data db stats`
+- Fix: `uv run tycoon data ingest all --max-records 500`
 
 **`Database not found: raw`**
 - dbt profiles.yml references `database: raw` but the attachment is missing
@@ -152,14 +152,14 @@ This is harmless — there's a `dagster.yaml` in the project root (for workspace
 ## Quick Diagnostic Commands
 
 ```bash
-# Overall health
-uv run tycoon check
-
-# What's on each port
-uv run tycoon check --verbose
-
 # DuckDB contents
-uv run tycoon db stats
+uv run tycoon data db stats
+
+# Check what tables exist
+uv run tycoon data db query "SHOW ALL TABLES"
+
+# Check port usage
+lsof -i :3000 -i :9009 -i :5005
 
 # Recent Dagster events
 tail -20 .tycoon/dagster/logs/event.log

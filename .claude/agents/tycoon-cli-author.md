@@ -121,16 +121,19 @@ console.print(Panel("My Section", style="bold"))
 ```
 tycoon
 ├── init              --template --name --list-templates
-├── sources           catalog|list|show|add|install|remove
-├── ingest            run <source>|all  [--max-records N]
-├── explore           <source>  --no-rill --no-dbt --build
-├── transform         run|test|build|docs
-├── serve             --port --host --reload
-├── check             --verbose --fix
-├── setup             --max-records N  --skip-ingest
-├── db                stats|query|clean
-├── ai                status|setup|ask|chat
-├── ask               (AI analytics agent)
+├── data
+│   ├── sources       catalog|list|show|add|install|remove
+│   ├── ingest        run <source>|all  [--max-records N]
+│   ├── explore       <source>  --no-rill --no-dbt --build
+│   ├── transform     run|test|build|docs
+│   ├── db            stats|query|clean
+│   └── setup         --max-records N  --skip-ingest
+├── ai
+│   ├── fix           (auto-fix failing dbt tests)
+│   ├── pipeline      <name>  (run a named AI worker pipeline)
+│   └── ask           init|sync|chat  (Nao AI queries)
+├── start             --only <service>
+├── stop
 ├── run               <tool> [args...]  (passthrough)
 └── version
 ```

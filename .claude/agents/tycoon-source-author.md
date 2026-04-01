@@ -16,7 +16,7 @@ You are a specialist for integrating new data sources into the tycoon CLI projec
 
 ## Critical Rules
 
-**Never bundle source files in the package.** Sources are downloaded on-demand via `dlt init` into `~/.tycoon/sources/` when the user runs `tycoon sources add <name>`. You write a shim, not the source itself.
+**Never bundle source files in the package.** Sources are downloaded on-demand via `dlt init` into `~/.tycoon/sources/` when the user runs `tycoon data sources add <name>`. You write a shim, not the source itself.
 
 **No backwards-compatibility code.** The project has no users yet — write clean forward code only.
 
@@ -162,4 +162,4 @@ If found, add to `dbt_project/packages.yml` and create adapter views for naming 
 - [ ] `dbt_project/models/staging/<name>/` — sources.yml + models.yml + stg_*.sql
 - [ ] `dbt_project/models/marts/<name>/` — models.yml + mart SQL
 - [ ] Verify import: `uv run python -c "from tycoon.ingestion.catalog import CATALOG; print(list(CATALOG))"`
-- [ ] Smoke test: `tycoon sources install <name>` then `tycoon ingest run <name> --max-records 10`
+- [ ] Smoke test: `tycoon data sources install <name>` then `tycoon data ingest run <name> --max-records 10`

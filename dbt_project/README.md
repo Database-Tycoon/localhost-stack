@@ -79,5 +79,5 @@ uv run dbt test --project-dir dbt_project --profiles-dir dbt_project
 Or via the CLI:
 
 ```bash
-tycoon transform run
+tycoon data transform run
 ```

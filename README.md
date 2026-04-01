@@ -37,17 +37,17 @@ Requirements: Python >= 3.12
 tycoon init my-project
 cd my-project
 
-# 2. Add a data source
-tycoon sources add github
+# 2. Add a data source (no auth — uses PokeAPI by default)
+tycoon data sources add rest_api
 
 # 3. Ingest data
-tycoon ingest run github
+tycoon data ingest run pokeapi
 
 # 4. Transform with dbt
-tycoon transform run
+tycoon data transform run
 
-# 5. Open dashboards
-tycoon serve
+# 5. Start dashboards, Dagster, Nao, and the web UI
+tycoon start
 ```
 
 ---
@@ -56,24 +56,23 @@ tycoon serve
 
 | Command | Description |
 |---|---|
-| `tycoon init` | Scaffold a new tycoon project with tycoon.yml and directory structure |
-| `tycoon sources catalog` | List all available sources in the catalog |
-| `tycoon sources add <name>` | Download a source via `dlt init` into `~/.tycoon/sources/` |
-| `tycoon sources install` | Install Python dependencies for all configured sources |
-| `tycoon sources list` | List sources configured in the current project |
-| `tycoon sources show <name>` | Show configuration details for a source |
-| `tycoon sources remove <name>` | Remove a source from the project |
-| `tycoon ingest run <name>` | Run ingestion pipeline for a named source |
-| `tycoon ingest all` | Run ingestion for all configured sources |
-| `tycoon transform run` | Run dbt transformations against the warehouse DuckDB |
-| `tycoon ask init` | Initialize Nao configuration for AI queries |
-| `tycoon ask sync` | Sync dbt metadata to Nao |
-| `tycoon ask chat` | Start an interactive AI query session |
-| `tycoon serve` | Launch Rill dashboard server |
-| `tycoon db` | Open an interactive DuckDB shell on the warehouse |
-| `tycoon check` | Validate project config, source connectivity, and dbt state |
-| `tycoon ai` | Open the tycoon AI assistant (project-aware) |
-| `tycoon explore` | Browse available tables and schemas interactively |
+| `tycoon init` | Scaffold a new project |
+| `tycoon data sources catalog` | Browse available source integrations |
+| `tycoon data sources add <type>` | Register a new data source |
+| `tycoon data sources install <name>` | Download and install a source's dlt package |
+| `tycoon data sources list` | List sources configured in this project |
+| `tycoon data ingest run <name>` | Run ingestion for a named source |
+| `tycoon data ingest all` | Run ingestion for all sources |
+| `tycoon data transform run` | Run dbt transformations |
+| `tycoon data explore <source>` | Scaffold dbt models and Rill dashboards for a source |
+| `tycoon data db query <sql>` | Run a SQL query against the warehouse |
+| `tycoon data setup` | Run the built-in NYC demo setup |
+| `tycoon start` | Start Rill, Dagster, Nao, and the web UI |
+| `tycoon stop` | Stop all services |
+| `tycoon ai fix` | Auto-fix failing dbt tests with AI |
+| `tycoon ai pipeline <name>` | Run a named AI worker pipeline |
+| `tycoon ai ask chat` | Query your data in natural language (Nao) |
+| `tycoon run <tool>` | Passthrough to dbt, dlt, rill, dagster |
 
 ---
 
@@ -111,7 +110,7 @@ Each source produces its own raw DuckDB file: `data/raw_<source>.duckdb`. All so
 
 ## Catalog Sources
 
-These sources are available via `tycoon sources add <name>`. They are downloaded on demand via `dlt init` and not bundled in the package.
+These sources are available via `tycoon data sources add <name>`. They are downloaded on demand via `dlt init` and not bundled in the package.
 
 | Source | Category | Key Tables |
 |---|---|---|
@@ -120,6 +119,18 @@ These sources are available via `tycoon sources add <name>`. They are downloaded
 | `stripe` | Finance | customers, invoices, products, subscriptions |
 | `hubspot` | CRM | companies, contacts, deals, tickets |
 | `notion` | Knowledge | databases, pages, users |
+
+---
+
+## Data Directory
+
+Raw DuckDB files follow the naming convention `raw_<source>.duckdb` (written by ingestion) while `warehouse.duckdb` is the single transformed database read by Rill and Nao. See `data/README.md` for details.
+
+---
+
+## Rill Dashboards
+
+Rill is a local-first BI tool that reads directly from DuckDB. Dashboard definitions are YAML files in the `rill/` directory. Launch Rill via `tycoon start` or `tycoon start --only rill`.
 
 ---
 
@@ -140,26 +151,7 @@ The workspace is defined in `workspace.yaml` at the project root.
 Installs Nao and Ibis for natural language querying of the warehouse. Requires a running LLM — Ollama (local) is supported out of the box with no API key.
 
 ```bash
-tycoon ask init
-tycoon ask sync
-tycoon ask chat
-```
-
----
-
-## Contributing / Dev Setup
-
-```bash
-git clone <repo>
-cd localhost-stack
-uv sync
-uv run pytest
-```
-
-The dev group includes pytest. Source code lives in `src/tycoon/`. The CLI entrypoint is `tycoon.cli:app` as defined in `pyproject.toml`.
-
-To test a local install:
-
-```bash
-uv run tycoon --help
+tycoon ai ask init
+tycoon ai ask sync
+tycoon ai ask chat
 ```

@@ -40,8 +40,8 @@ Written by dbt transformation runs. This is the single database read by Rill das
 
 | File | Written by | Read by |
 |---|---|---|
-| `raw_<source>.duckdb` | `tycoon ingest run <source>` | dbt (read-only attach) |
-| `warehouse.duckdb` | `tycoon transform run` | Rill, Nao, `tycoon db` |
+| `raw_<source>.duckdb` | `tycoon data ingest run <source>` | dbt (read-only attach) |
+| `warehouse.duckdb` | `tycoon data transform run` | Rill, Nao, `tycoon data db` |
 
 ---
 
@@ -49,5 +49,5 @@ Written by dbt transformation runs. This is the single database read by Rill das
 
 - Do not manually edit or delete these files while a pipeline or dbt run is in progress.
 - To reset a source, delete its raw DuckDB file and re-run ingestion.
-- To reset the warehouse, delete `warehouse.duckdb` and re-run `tycoon transform run`.
-- The `tycoon db` command opens an interactive DuckDB shell on `warehouse.duckdb`.
+- To reset the warehouse, delete `warehouse.duckdb` and re-run `tycoon data transform run`.
+- The `tycoon data db` command opens an interactive DuckDB shell on `warehouse.duckdb`.
