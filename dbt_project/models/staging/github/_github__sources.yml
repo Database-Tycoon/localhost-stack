@@ -1,0 +1,116 @@
+version: 2
+
+sources:
+  - name: github
+    database: raw
+    schema: raw_github
+    description: >
+      GitHub repository data loaded by a dlt pipeline. Nested JSON fields are
+      snake_cased by dlt using double-underscore notation (e.g. user.login
+      becomes user__login).
+    tables:
+      - name: issues
+        description: >
+          GitHub issues including both true issues and pull requests. The
+          pull_request struct is non-null for rows that are pull requests.
+          Labels and assignees are stored as JSON arrays.
+        columns:
+          - name: id
+            description: GitHub's globally unique numeric issue ID.
+          - name: number
+            description: Repository-scoped issue number.
+          - name: title
+            description: Issue title.
+          - name: body
+            description: Issue body text (Markdown).
+          - name: state
+            description: Issue state — open or closed.
+          - name: created_at
+            description: Timestamp when the issue was created (ISO 8601 string from source).
+          - name: updated_at
+            description: Timestamp when the issue was last updated (ISO 8601 string from source).
+          - name: closed_at
+            description: Timestamp when the issue was closed; null if still open.
+          - name: user__login
+            description: GitHub username of the issue author (dlt-flattened from user.login).
+          - name: user__id
+            description: GitHub numeric user ID of the issue author (dlt-flattened from user.id).
+          - name: labels
+            description: JSON array of label objects attached to the issue.
+          - name: assignees
+            description: JSON array of assignee objects.
+          - name: pull_request
+            description: Struct present when the issue is actually a pull request; null otherwise.
+          - name: comments
+            description: Count of comments on the issue.
+          - name: reactions__total_count
+            description: Total reaction count (dlt-flattened from reactions.total_count).
+
+      - name: pull_requests
+        description: >
+          GitHub pull requests with review and code-change metadata.
+          Requested reviewers are stored as a JSON array.
+        columns:
+          - name: id
+            description: GitHub's globally unique numeric pull request ID.
+          - name: number
+            description: Repository-scoped pull request number.
+          - name: title
+            description: Pull request title.
+          - name: state
+            description: PR state — open or closed.
+          - name: created_at
+            description: Timestamp when the PR was opened (ISO 8601 string from source).
+          - name: updated_at
+            description: Timestamp when the PR was last updated (ISO 8601 string from source).
+          - name: merged_at
+            description: Timestamp when the PR was merged; null if not merged.
+          - name: closed_at
+            description: Timestamp when the PR was closed; null if still open.
+          - name: user__login
+            description: GitHub username of the PR author (dlt-flattened from user.login).
+          - name: draft
+            description: Boolean flag indicating the PR is in draft state.
+          - name: requested_reviewers
+            description: JSON array of requested reviewer objects.
+          - name: head__ref
+            description: Source branch name (dlt-flattened from head.ref).
+          - name: base__ref
+            description: Target branch name (dlt-flattened from base.ref).
+          - name: additions
+            description: Lines added by this PR.
+          - name: deletions
+            description: Lines deleted by this PR.
+          - name: changed_files
+            description: Number of files changed by this PR.
+          - name: commits
+            description: Number of commits in this PR.
+          - name: review_comments
+            description: Number of inline review comments on this PR.
+
+      - name: commits
+        description: >
+          GitHub commit objects with authorship and diff statistics.
+        columns:
+          - name: sha
+            description: Full 40-character commit SHA.
+          - name: commit__message
+            description: Commit message (dlt-flattened from commit.message).
+          - name: commit__author__name
+            description: Author display name from git config (dlt-flattened).
+          - name: commit__author__email
+            description: Author email from git config (dlt-flattened).
+          - name: commit__author__date
+            description: Authorship timestamp (ISO 8601 string; when the commit was originally written).
+          - name: commit__committer__date
+            description: Committer timestamp (ISO 8601 string; when the commit was applied to the repo).
+          - name: author__login
+            description: GitHub username of the author if linked to a GitHub account (dlt-flattened).
+          - name: committer__login
+            description: GitHub username of the committer if linked to a GitHub account (dlt-flattened).
+          - name: stats__additions
+            description: Lines added in this commit (dlt-flattened from stats.additions).
+          - name: stats__deletions
+            description: Lines deleted in this commit (dlt-flattened from stats.deletions).
+          - name: stats__total
+            description: Total lines changed in this commit (dlt-flattened from stats.total).

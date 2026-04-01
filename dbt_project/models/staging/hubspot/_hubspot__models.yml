@@ -1,0 +1,30 @@
+version: 2
+
+# Passthrough views that expose raw.raw_hubspot tables in the hubspot_staging schema
+# of the writable duckdb. This is required because:
+#   1. The `raw` database is read-only — dbt cannot write into it.
+#   2. The dlt-dbt-hubspot package resolves source('raw_data', ...) using
+#      schema: '{{ var("source_dataset_name") }}', which must be a writable schema.
+#
+# These views materialize in `hubspot_staging` (configured via +schema in dbt_project.yml).
+# When building hubspot package models, override the vars:
+#   dbt build --select hubspot+ \
+#     --vars '{"source_dataset_name": "hubspot_staging", "destination_dataset_name": "hubspot_staging"}'
+
+models:
+  - name: contacts
+    description: Passthrough view over raw.raw_hubspot.contacts for the dlt-dbt-hubspot package.
+
+  - name: companies
+    description: Passthrough view over raw.raw_hubspot.companies for the dlt-dbt-hubspot package.
+
+  - name: deals
+    description: Passthrough view over raw.raw_hubspot.deals for the dlt-dbt-hubspot package.
+
+  - name: tickets
+    description: Passthrough view over raw.raw_hubspot.tickets for the dlt-dbt-hubspot package.
+
+  - name: hubspot__dlt_loads
+    description: >
+      Passthrough view over raw.raw_hubspot._dlt_loads. Exposes dlt load tracking
+      in hubspot_staging so the package's dlt_active_load_ids model can find it.

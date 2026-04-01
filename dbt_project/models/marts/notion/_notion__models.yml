@@ -1,0 +1,106 @@
+version: 2
+
+models:
+  - name: notion__pages
+    description: >
+      Enriched Notion pages joining database name and user display names for
+      the creator and last editor. Grain is one row per page. Non-database
+      pages (parent_type != 'database_id') are included with null database
+      fields. Archived pages are included and can be filtered with the
+      archived column.
+    config:
+      materialized: table
+    columns:
+      - name: page_id
+        description: Notion UUID for this page.
+        tests:
+          - not_null
+          - unique
+      - name: page_url
+        description: Public URL of the page in the Notion web app.
+        tests:
+          - not_null
+      - name: database_id
+        description: UUID of the parent database; null for standalone pages.
+      - name: parent_type
+        description: Type of the page's parent container.
+        tests:
+          - not_null
+      - name: database_name
+        description: Plain-text name of the parent database; null for standalone pages.
+      - name: database_url
+        description: URL of the parent database; null for standalone pages.
+      - name: created_by_id
+        description: UUID of the user who created the page.
+        tests:
+          - not_null
+      - name: created_by_name
+        description: Display name of the page creator.
+      - name: created_by_email
+        description: Email of the page creator; null for bot creators.
+      - name: last_edited_by_id
+        description: UUID of the user who last edited the page.
+        tests:
+          - not_null
+      - name: last_edited_by_name
+        description: Display name of the last editor.
+      - name: last_edited_by_email
+        description: Email of the last editor; null for bot editors.
+      - name: created_time
+        description: Timestamp when the page was created.
+        tests:
+          - not_null
+      - name: last_edited_time
+        description: Timestamp when the page was last edited.
+        tests:
+          - not_null
+      - name: created_date
+        description: Calendar date the page was created (truncated to day).
+      - name: last_edited_date
+        description: Calendar date the page was last edited (truncated to day).
+      - name: days_since_creation
+        description: >
+          Whole days between created_time and last_edited_time. Zero on the
+          day of creation; increases as the page is edited over time.
+      - name: archived
+        description: True when the page has been soft-deleted via Notion's archive.
+        tests:
+          - not_null
+      - name: properties
+        description: >
+          Raw JSON of this page's property values. Structure varies per
+          parent database; flatten in purpose-built downstream models.
+
+  - name: notion__workspace_activity
+    description: >
+      Daily workspace editing activity. Grain is one row per calendar day
+      where at least one page was created or edited. Useful for trending
+      workspace engagement over time.
+    config:
+      materialized: table
+    columns:
+      - name: activity_date
+        description: Calendar day (truncated to midnight).
+        tests:
+          - not_null
+          - unique
+      - name: pages_edited
+        description: >
+          Count of pages whose last_edited_time falls on this day. A page
+          created and edited on the same day is counted here too.
+        tests:
+          - not_null
+      - name: pages_created
+        description: Count of pages whose created_time falls on this day.
+        tests:
+          - not_null
+      - name: unique_editors
+        description: Count of distinct user IDs who last-edited a page on this day.
+        tests:
+          - not_null
+      - name: cumulative_pages_created
+        description: >
+          Running total of pages_created from the earliest day in the dataset
+          through this day. Useful for cumulative growth charts.
+        tests:
+          - not_null

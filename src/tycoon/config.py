@@ -84,6 +84,10 @@ class TycoonConfig:
             return self.root / self._project.rill_dir
         return self.root / _DEFAULT_RILL_DIR
 
+    @property
+    def nao_dir(self) -> Path:
+        return self.root / ".tycoon" / "nao"
+
     # -- Sources --
 
     @property

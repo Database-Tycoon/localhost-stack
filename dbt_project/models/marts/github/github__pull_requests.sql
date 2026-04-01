@@ -1,0 +1,29 @@
+{{
+  config(
+    materialized='table'
+  )
+}}
+
+select
+    pull_request_id,
+    id,
+    number,
+    title,
+    state,
+    is_merged,
+    is_draft,
+    author_login,
+    head_ref,
+    base_ref,
+    additions,
+    deletions,
+    changed_files,
+    commits,
+    review_comments,
+    cycle_time_hours,
+    requested_reviewers,
+    created_at,
+    updated_at,
+    merged_at,
+    closed_at
+from {{ ref('stg_github__pull_requests') }}

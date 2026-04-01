@@ -1,0 +1,32 @@
+version: 2
+
+# Alias views that bridge dlt's plural Stripe table names to the singular names
+# expected by the dlt-dbt-stripe package (source('raw_data', 'customer') etc.).
+# These materialize as views in the `stripe_staging` schema of nyc_open_data_local.duckdb,
+# which is the schema pointed to by source_dataset_name: "stripe_staging".
+
+models:
+  - name: customer
+    description: >
+      Alias view over raw.raw_stripe.customers. Provides the `customer` name
+      that dlt-dbt-stripe's source('raw_data', 'customer') resolves to.
+
+  - name: subscription
+    description: >
+      Alias view over raw.raw_stripe.subscriptions. Provides the `subscription` name
+      that dlt-dbt-stripe's source('raw_data', 'subscription') resolves to.
+
+  - name: invoice
+    description: >
+      Alias view over raw.raw_stripe.invoices. Provides the `invoice` name
+      that dlt-dbt-stripe's source('raw_data', 'invoice') resolves to.
+
+  - name: product
+    description: >
+      Alias view over raw.raw_stripe.products. Provides the `product` name
+      that dlt-dbt-stripe's source('raw_data', 'product') resolves to.
+
+  - name: stripe__dlt_loads
+    description: >
+      Passthrough view over raw.raw_stripe._dlt_loads. Exposes dlt load tracking
+      in stripe_staging so the package's dlt_active_load_ids model can find it.

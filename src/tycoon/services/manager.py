@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import signal
 import subprocess
 import time
@@ -50,13 +51,14 @@ class ServiceManager:
             return False
 
         info(f"Starting {name} on :{svc.port}")
+        proc_env = {**os.environ, **svc.env} if svc.env else None
         try:
             proc = subprocess.Popen(
                 svc.command,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 cwd=svc.cwd,
-                env=None,  # inherit parent env
+                env=proc_env,
             )
             self._processes[name] = proc
         except OSError as exc:

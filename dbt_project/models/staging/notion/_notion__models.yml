@@ -1,0 +1,127 @@
+version: 2
+
+models:
+  - name: stg_notion__users
+    description: >
+      Workspace members and integration bots from the Notion API. Renames the
+      dlt-flattened person__email field and adds an is_person convenience flag.
+    columns:
+      - name: id
+        description: Notion UUID for this user.
+        tests:
+          - not_null
+          - unique
+      - name: type
+        description: User type — 'person' for humans, 'bot' for integrations.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['person', 'bot']
+      - name: name
+        description: Display name of the user or bot.
+      - name: avatar_url
+        description: URL to the user's avatar image; null if not set.
+      - name: email
+        description: Email address; populated for person-type users only.
+      - name: is_person
+        description: >
+          True when type = 'person'. Convenience flag for filtering to human
+          workspace members.
+        tests:
+          - not_null
+
+  - name: stg_notion__databases
+    description: >
+      Notion databases (structured page collections). Timestamps are cast from
+      ISO 8601 strings. The plain-text title is extracted from Notion's
+      rich-text JSON array. The properties column retains the raw JSON schema
+      definition.
+    columns:
+      - name: id
+        description: Notion UUID for this database.
+        tests:
+          - not_null
+          - unique
+      - name: url
+        description: Public URL of the database in the Notion web app.
+        tests:
+          - not_null
+      - name: title
+        description: >
+          Plain-text database title extracted from the first rich-text element
+          (title[0].plain_text). Null if the title array is empty or malformed.
+      - name: title_raw
+        description: Raw Notion rich-text JSON array for the database title.
+      - name: description_raw
+        description: Raw Notion rich-text JSON array for the database description.
+      - name: created_time
+        description: Timestamp when the database was created (cast from ISO 8601).
+        tests:
+          - not_null
+      - name: last_edited_time
+        description: Timestamp when the database was last edited (cast from ISO 8601).
+        tests:
+          - not_null
+      - name: created_by_id
+        description: UUID of the user who created the database.
+        tests:
+          - not_null
+      - name: last_edited_by_id
+        description: UUID of the user who last edited the database.
+        tests:
+          - not_null
+      - name: properties
+        description: >
+          JSON struct of property definitions for this database. Keys are
+          property names; values describe the property type and configuration.
+
+  - name: stg_notion__pages
+    description: >
+      Notion pages belonging to databases or the workspace root. Timestamps are
+      cast from ISO 8601 strings. Parent and user foreign keys are renamed from
+      dlt's double-underscore notation. The properties column retains raw JSON
+      and should be flattened in purpose-built downstream models.
+    columns:
+      - name: id
+        description: Notion UUID for this page.
+        tests:
+          - not_null
+          - unique
+      - name: url
+        description: Public URL of the page in the Notion web app.
+        tests:
+          - not_null
+      - name: created_time
+        description: Timestamp when the page was created (cast from ISO 8601).
+        tests:
+          - not_null
+      - name: last_edited_time
+        description: Timestamp when the page was last edited (cast from ISO 8601).
+        tests:
+          - not_null
+      - name: created_by_id
+        description: UUID of the user who created the page.
+        tests:
+          - not_null
+      - name: last_edited_by_id
+        description: UUID of the user who last edited the page.
+        tests:
+          - not_null
+      - name: database_id
+        description: >
+          UUID of the parent database when parent_type = 'database_id';
+          null for standalone workspace pages.
+      - name: parent_type
+        description: >
+          Type of the page's parent container: 'database_id', 'page_id',
+          or 'workspace'.
+        tests:
+          - not_null
+      - name: archived
+        description: True when the page has been archived (soft-deleted).
+        tests:
+          - not_null
+      - name: properties
+        description: >
+          JSON struct of this page's property values. Structure varies per
+          parent database. Not flattened in staging.

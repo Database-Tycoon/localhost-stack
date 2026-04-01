@@ -1,0 +1,176 @@
+version: 2
+
+models:
+  - name: stg_github__issues
+    description: >
+      Staged GitHub issues. Renames dlt double-underscore fields to clean
+      business names, casts ISO 8601 timestamp strings to TIMESTAMP, derives
+      is_pull_request and is_open boolean flags, and adds a surrogate key.
+      Each row represents one unique issue or pull-request thread.
+    columns:
+      - name: issue_id
+        description: MD5 surrogate key derived from the GitHub issue id.
+        tests:
+          - not_null
+          - unique
+      - name: id
+        description: GitHub's globally unique numeric issue ID (natural key).
+        tests:
+          - not_null
+          - unique
+      - name: number
+        description: Repository-scoped issue number.
+        tests:
+          - not_null
+      - name: title
+        description: Issue title.
+        tests:
+          - not_null
+      - name: body
+        description: Issue body text (Markdown). May be null for empty issues.
+      - name: state
+        description: Issue lifecycle state — open or closed.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['open', 'closed']
+      - name: is_open
+        description: True when state = 'open'.
+        tests:
+          - not_null
+      - name: is_pull_request
+        description: True when this issue row is actually a pull request.
+        tests:
+          - not_null
+      - name: author_login
+        description: GitHub username of the issue or PR author.
+      - name: author_id
+        description: GitHub numeric user ID of the issue or PR author.
+      - name: comments
+        description: Count of comments on the issue.
+      - name: reactions_total
+        description: Total reaction count across all reaction types.
+      - name: labels
+        description: Raw JSON array of label objects from the source.
+      - name: assignees
+        description: Raw JSON array of assignee objects from the source.
+      - name: created_at
+        description: Timestamp when the issue was created.
+        tests:
+          - not_null
+      - name: updated_at
+        description: Timestamp when the issue was last updated.
+      - name: closed_at
+        description: Timestamp when the issue was closed; null if still open.
+
+  - name: stg_github__pull_requests
+    description: >
+      Staged GitHub pull requests. Renames dlt double-underscore fields,
+      casts timestamps, adds is_merged and is_draft boolean flags, and
+      computes cycle_time_hours from open to merge/close. Surrogate key
+      derived from the PR id.
+    columns:
+      - name: pull_request_id
+        description: MD5 surrogate key derived from the GitHub PR id.
+        tests:
+          - not_null
+          - unique
+      - name: id
+        description: GitHub's globally unique numeric PR ID (natural key).
+        tests:
+          - not_null
+          - unique
+      - name: number
+        description: Repository-scoped pull request number.
+        tests:
+          - not_null
+      - name: title
+        description: Pull request title.
+        tests:
+          - not_null
+      - name: state
+        description: PR lifecycle state — open or closed.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['open', 'closed']
+      - name: is_merged
+        description: True when the PR has a non-null merged_at timestamp.
+        tests:
+          - not_null
+      - name: is_draft
+        description: True when the PR was marked as a draft at the time of load.
+        tests:
+          - not_null
+      - name: author_login
+        description: GitHub username of the PR author.
+      - name: head_ref
+        description: Source (feature) branch name.
+      - name: base_ref
+        description: Target (base) branch name.
+      - name: additions
+        description: Lines added by this PR.
+      - name: deletions
+        description: Lines deleted by this PR.
+      - name: changed_files
+        description: Number of files changed by this PR.
+      - name: commits
+        description: Number of commits in this PR.
+      - name: review_comments
+        description: Number of inline review comments on this PR.
+      - name: cycle_time_hours
+        description: >
+          Whole hours between created_at and the earlier of merged_at or
+          closed_at. Null when the PR is still open (neither merged nor
+          closed).
+      - name: requested_reviewers
+        description: Raw JSON array of requested reviewer objects from the source.
+      - name: created_at
+        description: Timestamp when the PR was opened.
+        tests:
+          - not_null
+      - name: updated_at
+        description: Timestamp when the PR was last updated.
+      - name: merged_at
+        description: Timestamp when the PR was merged; null if not merged.
+      - name: closed_at
+        description: Timestamp when the PR was closed; null if still open.
+
+  - name: stg_github__commits
+    description: >
+      Staged GitHub commits. Flattens dlt double-underscore nested fields into
+      clean names, casts the author date to TIMESTAMP as committed_at, and
+      adds a surrogate key derived from the commit SHA.
+    columns:
+      - name: commit_id
+        description: MD5 surrogate key derived from the commit SHA.
+        tests:
+          - not_null
+          - unique
+      - name: sha
+        description: Full 40-character commit SHA (natural key).
+        tests:
+          - not_null
+          - unique
+      - name: message
+        description: Commit message text.
+      - name: author_name
+        description: Author display name from git config.
+      - name: author_email
+        description: Author email from git config.
+      - name: author_login
+        description: GitHub username of the author if linked to a GitHub account; null otherwise.
+      - name: committer_login
+        description: GitHub username of the committer if linked to a GitHub account; null otherwise.
+      - name: committed_at
+        description: Authorship timestamp — when the commit was originally written.
+        tests:
+          - not_null
+      - name: committer_date
+        description: Committer timestamp — when the commit was applied to the repository.
+      - name: additions
+        description: Lines added in this commit.
+      - name: deletions
+        description: Lines deleted in this commit.
+      - name: total_changes
+        description: Total lines changed (additions + deletions) in this commit.

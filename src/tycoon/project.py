@@ -53,6 +53,28 @@ class DatabaseConfig(BaseModel):
     warehouse: str = Field(default="data/warehouse.duckdb", description="Transformed warehouse database")
 
 
+class LLMConfig(BaseModel):
+    """LLM provider config for the ask (Nao) feature."""
+
+    provider: str = Field(default="openai", description="LLM provider (openai, anthropic, ollama, mistral, gemini)")
+    model: str | None = Field(default=None, description="Model name override")
+    api_key_env: str | None = Field(default=None, description="Env var name holding the API key")
+
+
+class AskConfig(BaseModel):
+    """Configuration for `tycoon ask` (Nao analytics agent)."""
+
+    llm: LLMConfig | None = Field(default=None)
+    port: int = Field(default=5005, description="Port for nao chat UI")
+    rules: str | None = Field(default=None, description="Custom instructions written to RULES.md")
+    include_schemas: list[str] = Field(default_factory=list, description="Only expose these schemas to nao")
+    exclude_schemas: list[str] = Field(default_factory=list, description="Hide these schemas from nao")
+    skills_dir: str | None = Field(
+        default=None,
+        description="Path to skills folder. Defaults to .tycoon/nao/agent/skills/"
+    )
+
+
 class TycoonProject(BaseModel):
     """Top-level tycoon.yml schema."""
 
@@ -62,6 +84,7 @@ class TycoonProject(BaseModel):
     sources: dict[str, SourceConfig] = Field(default_factory=dict, description="Registered data sources")
     dbt_project_dir: str = Field(default="dbt_project", description="Path to dbt project")
     rill_dir: str = Field(default="rill", description="Path to Rill dashboards")
+    ask: AskConfig | None = Field(default=None, description="Nao analytics agent configuration")
 
 
 PROJECT_FILENAME = "tycoon.yml"

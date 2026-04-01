@@ -8,11 +8,14 @@ legacy pipelines, it delegates to the existing pipeline modules.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Any
 
 import dlt
 
+from tycoon.ingestion.catalog import CATALOG
+from tycoon.ingestion.source_manager import SOURCES_DIR, get_run_module_path, is_source_installed
 from tycoon.project import SourceConfig
 
 
@@ -83,9 +86,13 @@ def run_source(
 
     Returns (pipeline, load_info).
     """
-    # Legacy pipeline delegation
+    # Legacy pipeline delegation (keyed by source name)
     if name in _LEGACY_PIPELINES:
         return _run_legacy(name, max_records=max_records, **kwargs)
+
+    # Catalog source dispatch — load from ~/.tycoon/sources/
+    if source_config.type in CATALOG:
+        return _run_catalog(source_config.type, name, source_config, raw_db_path, max_records)
 
     # Generic pipeline
     pipeline = dlt.pipeline(
@@ -135,3 +142,29 @@ def _run_legacy(
     module_path = _LEGACY_PIPELINES[name]
     mod = importlib.import_module(module_path)
     return mod.run_pipeline(max_records=max_records, **kwargs)
+
+
+def _run_catalog(
+    source_type: str,
+    name: str,
+    source_config: SourceConfig,
+    raw_db_path: Path,
+    max_records: int | None = None,
+) -> tuple[dlt.Pipeline, Any]:
+    """Load a catalog source from ~/.tycoon/sources/ and run its pipeline."""
+    import importlib
+
+    if not is_source_installed(source_type):
+        raise RuntimeError(
+            f"Source '{source_type}' is not installed. "
+            f"Run: tycoon sources add {source_type}"
+        )
+
+    # Add ~/.tycoon/sources/ to sys.path so dlt-init'd packages are importable
+    sources_str = str(SOURCES_DIR)
+    if sources_str not in sys.path:
+        sys.path.insert(0, sources_str)
+
+    module_path = get_run_module_path(source_type)
+    mod = importlib.import_module(module_path)
+    return mod.run_pipeline(name, source_config, raw_db_path, max_records=max_records)

@@ -1,7 +1,6 @@
-# Dagster workspace — tells the webserver where to find pipeline code.
+# Dagster workspace — load pipeline code from the local module.
 
 load_from:
-  - grpc_server:
-      host: dagster-user-code
-      port: 4000
+  - python_module:
+      module_name: tycoon.orchestration.definitions
       location_name: tycoon_pipelines

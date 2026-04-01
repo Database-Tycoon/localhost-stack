@@ -1,23 +1,5 @@
 type: explore
 title: "Traffic Volume"
 description: "Traffic volume patterns by segment, date, and time period"
-model: fct_traffic_volume_patterns
-dimensions:
-  - column: segment_id
-    label: Segment
-  - column: date
-    label: Date
-    type: timestamp
-  - column: time_period
-    label: Time Period
-measures:
-  - expression: "sum(total_volume)"
-    label: "Total Volume"
-    format: "#,##0"
-  - expression: "avg(avg_volume)"
-    label: "Avg Volume"
-    format: "#,##0.0"
-  - expression: "count(*)"
-    label: "Records"
-    format: "#,##0"
+metrics_view: traffic_volume_mv
 default_time_range: P3M

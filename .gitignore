@@ -5,6 +5,7 @@ __pycache__/
 dist/
 build/
 *.egg
+.pytest_cache/
 
 # Virtual environments
 .venv/
@@ -14,6 +15,7 @@ venv/
 *.duckdb
 *.duckdb.wal
 data/
+!data/README.md
 
 # dbt
 transformation/target/
@@ -39,3 +41,22 @@ rill/tmp/
 
 # DuckLake
 ducklake_data/
+
+# Dagster runtime state
+dagster_home/
+.tmp_dagster_home_*/
+.tycoon/dagster/
+
+# AI tool configs (machine-specific)
+.aider*
+.config/
+.gemini/
+ai-workbench/
+
+# Nao analytics agent (auto-generated context, not source code)
+.tycoon/nao/databases/
+.tycoon/nao/repos/
+.tycoon/nao/agent/
+
+# tycoon runtime state (PIDs, locks)
+.tycoon/run/

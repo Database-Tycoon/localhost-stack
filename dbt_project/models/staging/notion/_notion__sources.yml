@@ -1,0 +1,88 @@
+version: 2
+
+sources:
+  - name: notion
+    database: raw
+    schema: raw_notion
+    description: >
+      Notion workspace data loaded by a dlt pipeline. Nested JSON fields are
+      snake_cased by dlt using double-underscore notation (e.g. created_by.id
+      becomes created_by__id, person.email becomes person__email).
+    tables:
+      - name: users
+        description: >
+          Notion workspace members. Includes both human users (type = 'person')
+          and integration bots (type = 'bot').
+        columns:
+          - name: id
+            description: Notion's UUID for this user.
+          - name: type
+            description: User type — 'person' or 'bot'.
+          - name: name
+            description: Display name of the user or bot.
+          - name: avatar_url
+            description: URL to the user's avatar image; may be null.
+          - name: object
+            description: Notion object type — always 'user'.
+          - name: person__email
+            description: Email address for person-type users (dlt-flattened from person.email); null for bots.
+
+      - name: databases
+        description: >
+          Notion databases (structured collections of pages). The properties
+          column is a JSON struct describing the schema of each database —
+          i.e. what property fields pages in that database can have.
+        columns:
+          - name: id
+            description: Notion's UUID for this database.
+          - name: title
+            description: >
+              Database title stored as a Notion rich-text JSON array.
+              Each element has a plain_text field with the display string.
+          - name: description
+            description: >
+              Database description stored as a Notion rich-text JSON array;
+              may be null or an empty array.
+          - name: url
+            description: Public URL of the database in the Notion web app.
+          - name: created_time
+            description: ISO 8601 timestamp when the database was created.
+          - name: last_edited_time
+            description: ISO 8601 timestamp when the database was last edited.
+          - name: created_by__id
+            description: UUID of the user who created the database (dlt-flattened from created_by.id).
+          - name: last_edited_by__id
+            description: UUID of the user who last edited the database (dlt-flattened from last_edited_by.id).
+          - name: properties
+            description: >
+              JSON struct of property definitions for this database. Keys are
+              property names; values describe the property type and configuration.
+
+      - name: pages
+        description: >
+          Notion pages, which may belong to a database (parent.type = 'database_id')
+          or be standalone workspace pages. The properties column contains the
+          page's actual property values according to its parent database's schema.
+        columns:
+          - name: id
+            description: Notion's UUID for this page.
+          - name: url
+            description: Public URL of the page in the Notion web app.
+          - name: created_time
+            description: ISO 8601 timestamp when the page was created.
+          - name: last_edited_time
+            description: ISO 8601 timestamp when the page was last edited.
+          - name: created_by__id
+            description: UUID of the user who created the page (dlt-flattened from created_by.id).
+          - name: last_edited_by__id
+            description: UUID of the user who last edited the page (dlt-flattened from last_edited_by.id).
+          - name: parent__database_id
+            description: UUID of the parent database if parent.type = 'database_id'; null otherwise (dlt-flattened).
+          - name: parent__type
+            description: Parent container type — 'database_id', 'page_id', or 'workspace' (dlt-flattened).
+          - name: archived
+            description: Boolean flag; true when the page has been archived (soft-deleted).
+          - name: properties
+            description: >
+              JSON struct of property values for this page, keyed by property name.
+              Structure varies per database. Not flattened in staging.

@@ -1,0 +1,103 @@
+version: 2
+
+sources:
+  - name: slack
+    description: >
+      Raw Slack data loaded by a dlt pipeline into DuckDB. All tables land in the
+      raw_slack schema. Timestamps are stored as Unix epoch (float for messages,
+      integer for channels/users) and must be cast in the staging layer.
+    database: raw
+    schema: raw_slack
+    tables:
+      - name: channels
+        description: >
+          Slack channels (public and private). Includes metadata such as topic,
+          purpose, member count, and archival status. Refreshed on a full-replace
+          cadence by the dlt pipeline.
+        columns:
+          - name: id
+            description: Slack-assigned channel identifier (e.g. C012AB3CD).
+          - name: name
+            description: Channel name without the leading #.
+          - name: is_private
+            description: True if the channel is private.
+          - name: is_archived
+            description: True if the channel has been archived.
+          - name: topic__value
+            description: Channel topic text (dlt snake-cases nested JSON — topic.value).
+          - name: purpose__value
+            description: Channel purpose text (dlt snake-cases nested JSON — purpose.value).
+          - name: num_members
+            description: Current member count.
+          - name: created
+            description: Channel creation time as a Unix epoch integer.
+          - name: updated
+            description: Last metadata update time as a Unix epoch integer.
+
+      - name: users
+        description: >
+          Slack workspace members including bots and deactivated accounts.
+          Refreshed on a full-replace cadence by the dlt pipeline.
+        columns:
+          - name: id
+            description: Slack-assigned user identifier (e.g. U012AB3CD).
+          - name: name
+            description: Slack handle (username) without the leading @.
+          - name: real_name
+            description: User's full display name as set in their profile.
+          - name: display_name
+            description: User's chosen display name (may differ from real_name).
+          - name: is_bot
+            description: True if the user is a bot or app integration.
+          - name: is_admin
+            description: True if the user has workspace admin privileges.
+          - name: is_owner
+            description: True if the user is a workspace owner.
+          - name: deleted
+            description: True if the account has been deactivated.
+          - name: tz
+            description: IANA timezone string for the user (e.g. America/New_York).
+          - name: profile__email
+            description: Email address from the user profile (dlt snake-case of profile.email).
+          - name: profile__title
+            description: Job title from the user profile (dlt snake-case of profile.title).
+          - name: profile__image_72
+            description: URL of the 72×72 px profile photo.
+
+      - name: messages
+        description: >
+          Slack messages across all loaded channels. The ts field is a STRING
+          representing a float Unix epoch (e.g. "1609459200.000100") — Slack's
+          native message identifier. Incremental loads append new messages; the
+          dlt pipeline partitions by channel.
+        columns:
+          - name: ts
+            description: >
+              Message timestamp as a string-encoded float epoch (e.g.
+              "1609459200.000100"). Acts as the natural message key within a channel.
+          - name: channel
+            description: Channel ID the message belongs to (foreign key to channels.id).
+          - name: text
+            description: Plain-text body of the message (may be empty for file/attachment-only posts).
+          - name: user
+            description: User ID of the message author (foreign key to users.id). Null for bot messages without a user.
+          - name: type
+            description: Slack event type (always 'message' for normal messages).
+          - name: subtype
+            description: >
+              Optional message subtype. Common values: bot_message, channel_join,
+              channel_leave, channel_archive, file_share. Null for normal user messages.
+          - name: thread_ts
+            description: >
+              Timestamp of the parent message if this is a thread reply. Equals ts
+              for the thread root; null for standalone messages.
+          - name: reply_count
+            description: Number of thread replies on this message (non-null only on thread roots).
+          - name: reactions
+            description: JSON array of reaction objects ({name, count, users[]}).
+          - name: files
+            description: JSON array of file attachment objects.
+          - name: attachments
+            description: JSON array of legacy Slack attachments.
+          - name: blocks
+            description: JSON array of Block Kit layout blocks.

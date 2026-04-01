@@ -60,12 +60,36 @@ def get_service_definitions() -> list[ServiceDef]:
         ServiceDef(
             name="rill",
             port=PORTS["rill"],
-            command=["rill", "start", str(config.rill_dir), "--port", "9009"],
+            command=["rill", "start", str(config.rill_dir), "--port", "9009", "--no-open"],
+            env={"CONNECTOR_DUCKDB_DSN": str(config.local_db)},
+        ),
+        ServiceDef(
+            name="dagster",
+            port=PORTS["dagster"],
+            command=["dagster", "dev", "--port", str(PORTS["dagster"])],
+            health_path="/server_info",
+            env={"DAGSTER_HOME": str(config.root / ".tycoon" / "dagster")},
+        ),
+        ServiceDef(
+            name="nao",
+            port=PORTS["nao"],
+            command=[
+                "python", "-m", "nao_core", "chat",
+                "--port", str(PORTS["nao"]),
+            ],
+            cwd=str(config.nao_dir),
         ),
         ServiceDef(
             name="tycoon",
             port=PORTS["tycoon"],
-            command=[],  # Managed separately via uvicorn
+            command=[
+                "uvicorn",
+                "tycoon.server.app:create_app",
+                "--factory",
+                "--host", "0.0.0.0",
+                "--port", str(PORTS["tycoon"]),
+            ],
+            health_path="/health",
         ),
     ]
 
