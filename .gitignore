@@ -60,3 +60,5 @@ ai-workbench/
 
 # tycoon runtime state (PIDs, locks)
 .tycoon/run/
+logs/
+.claude/worktrees/
