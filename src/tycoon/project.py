@@ -69,6 +69,10 @@ class AskConfig(BaseModel):
     rules: str | None = Field(default=None, description="Custom instructions written to RULES.md")
     include_schemas: list[str] = Field(default_factory=list, description="Only expose these schemas to nao")
     exclude_schemas: list[str] = Field(default_factory=list, description="Hide these schemas from nao")
+    skills_dir: str | None = Field(
+        default=None,
+        description="Path to skills folder. Defaults to .tycoon/nao/agent/skills/"
+    )
 
 
 class TycoonProject(BaseModel):

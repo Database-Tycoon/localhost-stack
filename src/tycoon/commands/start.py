@@ -13,8 +13,8 @@ import typer
 from tycoon.config import config
 from tycoon.utils.console import console, error, header, info, success, warn
 
-# The three servers that run continuously and are not Dagster assets.
-_SERVER_NAMES = ["rill", "dagster", "nao"]
+# The servers that run continuously and are not Dagster assets.
+_SERVER_NAMES = ["tycoon", "rill", "dagster", "nao"]
 
 _PID_FILE = Path(".tycoon") / "run" / "pids.json"
 
@@ -43,9 +43,9 @@ def start_cmd(
         [], "--only", help="Only start these server(s). Repeatable: --only rill"
     ),
 ) -> None:
-    """Start the Rill dashboard, Dagster orchestrator, and Nao AI agent.
+    """Start the Tycoon web UI, Rill dashboard, Dagster orchestrator, and Nao AI agent.
 
-    All three run as background processes in this session.
+    All servers run as background processes in this session.
     Press Ctrl-C or run `tycoon stop` to shut everything down.
     """
     from tycoon.services.manager import ServiceManager
@@ -96,6 +96,13 @@ def _resolve_targets(skip: list[str], only: list[str]) -> list[str]:
 
 def _preflight_checks(targets: list[str]) -> None:
     """Warn if required config or binaries are missing before starting."""
+    if "tycoon" in targets:
+        try:
+            import tycoon.server.app  # noqa: F401
+        except ImportError:
+            warn("tycoon.server.app could not be imported — skipping Tycoon web UI.")
+            targets.remove("tycoon")
+
     if "nao" in targets:
         try:
             import nao_core  # noqa: F401
@@ -117,7 +124,8 @@ def _preflight_checks(targets: list[str]) -> None:
 def _print_urls(targets: list[str]) -> None:
     from tycoon.constants import PORTS
     lines = {
-        "rill":    ("Rill dashboards", f"http://localhost:{PORTS['rill']}"),
+        "tycoon":  ("Tycoon UI",        f"http://localhost:{PORTS['tycoon']}"),
+        "rill":    ("Rill dashboards",  f"http://localhost:{PORTS['rill']}"),
         "dagster": ("Dagster UI",       f"http://localhost:{PORTS['dagster']}"),
         "nao":     ("Nao AI queries",   f"http://localhost:{PORTS['nao']}"),
     }

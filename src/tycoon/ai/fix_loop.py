@@ -10,8 +10,6 @@ import re
 import subprocess
 from pathlib import Path
 
-from tycoon.ai.client import chat
-from tycoon.ai.file_proposals import parse_proposals
 from tycoon.utils.console import console, info, success, warn, error
 
 
@@ -26,6 +24,43 @@ _MODEL_NAME_PATTERN = re.compile(
 
 # Simpler: find any token ending in .sql that looks like a models path
 _SQL_PATH_PATTERN = re.compile(r"models/[\w./\-]+\.sql")
+
+
+def _parse_test_name(output: str) -> str:
+    """Extract a test name from dbt failure output.
+
+    Looks for lines like:
+        Failure in test not_null_trips_trip_id (models/staging/stg_trips.sql)
+        FAIL 1 not_null_trips_trip_id ....../models/staging/stg_trips.sql
+    Returns "unknown" if no match is found.
+    """
+    # "Failure in test <name>" pattern
+    m = re.search(r"Failure in test\s+(\S+)", output)
+    if m:
+        return m.group(1)
+    # "FAIL <count> <name>" pattern
+    m = re.search(r"\bFAIL\s+\d+\s+(\S+)", output)
+    if m:
+        return m.group(1)
+    return "unknown"
+
+
+def _read_model_sql(model_paths: list[Path]) -> str:
+    """Read and join SQL content from all existing model paths."""
+    parts: list[str] = []
+    for path in model_paths:
+        if path.exists():
+            parts.append(path.read_text())
+    return "\n".join(parts)
+
+
+def _read_schema_yaml(model_paths: list[Path], dbt_dir: Path) -> str:
+    """Return the content of the first schema.yml found in any model's parent dir."""
+    for path in model_paths:
+        candidate = path.parent / "schema.yml"
+        if candidate.exists():
+            return candidate.read_text()
+    return ""
 
 
 def _parse_failure_models(dbt_output: str, dbt_dir: Path) -> list[Path]:
@@ -72,7 +107,6 @@ def _restore_backups(backed_up: list[Path]) -> None:
 def run_fix_loop(
     dbt_dir: Path,
     project_root: Path,
-    system_prompt: str,
     model: str | None = None,
     max_attempts: int = 3,
     target: str = "local",
@@ -80,13 +114,12 @@ def run_fix_loop(
 ) -> bool:
     """Run the agentic dbt test fix loop.
 
-    Executes dbt tests, feeds failures to the AI, applies proposed file
+    Executes dbt tests, feeds failures to TestFixer, applies proposed file
     changes, and repeats until all tests pass or *max_attempts* is reached.
 
     Args:
         dbt_dir: Path to the dbt project directory (contains ``dbt_project.yml``).
         project_root: Working directory for subprocess invocations.
-        system_prompt: System prompt prepended to every AI request.
         model: LM Studio model override (``None`` uses the loaded model).
         max_attempts: Maximum number of fix-and-retest cycles.
         target: dbt ``--target`` profile name.
@@ -140,57 +173,27 @@ def run_fix_loop(
         failure_models = _parse_failure_models(combined_output, dbt_dir)
 
         # ------------------------------------------------------------------ #
-        # Step 4: Build the AI message
+        # Step 4-6: Ask TestFixer to propose a minimal fix
         # ------------------------------------------------------------------ #
-        model_context_parts: list[str] = []
-        for model_path in failure_models:
-            if model_path.exists():
-                model_context_parts.append(
-                    f"### {model_path.relative_to(dbt_dir)}\n"
-                    f"```sql\n{model_path.read_text().strip()}\n```"
-                )
+        from tycoon.ai.workers.tests import TestFixer
 
-        model_context = (
-            "\n\n## Relevant dbt Model Files\n\n" + "\n\n".join(model_context_parts)
-            if model_context_parts
-            else ""
-        )
-
-        user_content = (
-            "## dbt Test Output\n\n"
-            f"```\n{combined_output.strip()}\n```"
-            f"{model_context}\n\n"
-            "Fix the failing dbt tests. Propose file changes using fenced code blocks "
-            "with the file path as the language identifier."
-        )
-
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_content},
-        ]
-
-        # ------------------------------------------------------------------ #
-        # Step 5: Call the AI
-        # ------------------------------------------------------------------ #
         info("Waiting for AI response...")
-        try:
-            ai_response = chat(messages, model=model)
-        except Exception as exc:
-            error(f"AI request failed: {exc}")
+        worker = TestFixer(model=model)
+        worker_result = worker.run(
+            test_name=_parse_test_name(combined_output),
+            failure_output=combined_output,
+            model_sql=_read_model_sql(failure_models),
+            schema_yaml=_read_schema_yaml(failure_models, dbt_dir),
+        )
+        if not worker_result.success:
+            warn(f"TestFixer could not propose a fix: {worker_result.message}")
             _restore_backups(backed_up)
             return False
 
         console.print()
-        console.print(ai_response)
+        console.print(worker_result.message)
 
-        # ------------------------------------------------------------------ #
-        # Step 6: Parse and apply proposals
-        # ------------------------------------------------------------------ #
-        proposals = parse_proposals(ai_response)
-        if not proposals:
-            warn("AI returned no file proposals. Cannot auto-fix.")
-            _restore_backups(backed_up)
-            return False
+        proposals = worker_result.proposals
 
         console.print(f"\n[bold]{len(proposals)} file proposal(s) detected — applying...[/bold]")
         for proposal in proposals:

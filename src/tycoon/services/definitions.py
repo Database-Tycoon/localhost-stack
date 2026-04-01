@@ -82,7 +82,14 @@ def get_service_definitions() -> list[ServiceDef]:
         ServiceDef(
             name="tycoon",
             port=PORTS["tycoon"],
-            command=[],  # Managed separately via uvicorn
+            command=[
+                "uvicorn",
+                "tycoon.server.app:create_app",
+                "--factory",
+                "--host", "0.0.0.0",
+                "--port", str(PORTS["tycoon"]),
+            ],
+            health_path="/health",
         ),
     ]
 

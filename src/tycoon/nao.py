@@ -75,6 +75,20 @@ def build_nao_config(cfg: TycoonConfig) -> dict:
             llm_entry["api_key"] = f"{{{{ env('{llm.api_key_env}') }}}}"
         config["llm"] = llm_entry
 
+    # Skills config
+    skills_dir = Path(ask.skills_dir) if (ask and ask.skills_dir) else nao_dir / "agent" / "skills"
+    skills_dir.mkdir(parents=True, exist_ok=True)
+    config["skills"] = {
+        "folder_path": str(skills_dir)
+    }
+
+    # MCP config
+    mcp_path = nao_dir / "agent" / "mcps" / "mcp.json"
+    mcp_path.parent.mkdir(parents=True, exist_ok=True)
+    if not mcp_path.exists():
+        mcp_path.write_text('{"mcpServers": {}}')
+    config["mcp"] = {"json_file_path": str(mcp_path)}
+
     return config
 
 

@@ -3,12 +3,22 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "tycoon"
+name = "database-tycoon"
 version = "0.4.0"
 description = "Database Tycoon — local-first analytics CLI for exploring any dataset"
-license = "MIT"
+readme = "README.md"
+license = {text = "MIT"}
 authors = [{name = "Database Tycoon Team"}]
 requires-python = ">=3.12"
+keywords = ["data", "analytics", "duckdb", "dbt", "dlt", "cli"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database",
+]
 dependencies = [
     "typer>=0.15.0",
     "rich>=13.0.0",
@@ -35,6 +45,11 @@ ask = [
     "nao-core>=0.0.59",
     "ibis-framework[duckdb]>=9.0.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/database-tycoon/localhost-stack"
+Repository = "https://github.com/database-tycoon/localhost-stack"
+Issues = "https://github.com/database-tycoon/localhost-stack/issues"
 
 [dependency-groups]
 dev = ["pytest>=8.0.0"]

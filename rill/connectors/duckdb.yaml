@@ -1,3 +1,5 @@
 type: connector
 driver: duckdb
-db: "{{ .env.CONNECTOR_DUCKDB_DSN }}"
+# CONNECTOR_DUCKDB_DSN is injected by `tycoon start`. When running `rill start rill/` manually,
+# the fallback resolves to a path relative to the repo root.
+dsn: '{{ .env.CONNECTOR_DUCKDB_DSN | default "../data/nyc_open_data_local.duckdb" }}'

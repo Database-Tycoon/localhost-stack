@@ -305,7 +305,6 @@ def fix(
     max_attempts: Annotated[int, typer.Option("--max-attempts", help="Max fix attempts.")] = 3,
     target: Annotated[str, typer.Option("--target", "-t", help="dbt target profile (default: local).")] = "local",
     select: Annotated[str | None, typer.Option("--select", "-s", help="dbt model selection syntax.")] = None,
-    no_context: Annotated[bool, typer.Option("--no-context", help="Skip project context gathering.")] = False,
 ) -> None:
     """Automatically fix failing dbt tests using the AI assistant.
 
@@ -321,21 +320,9 @@ def fix(
 
     header("Tycoon AI Fix")
 
-    if no_context:
-        system_prompt = (
-            "You are a data pipeline assistant. The stack uses: "
-            "dlt (ingestion) → DuckDB (storage) → dbt (transforms). "
-            "When proposing file changes, use fenced code blocks with the "
-            "target file path as the language identifier."
-        )
-    else:
-        info("Gathering project context...")
-        system_prompt = _gather_project_context()
-
     passed = run_fix_loop(
         dbt_dir=config.dbt_project_dir,
         project_root=config.root,
-        system_prompt=system_prompt,
         model=model,
         max_attempts=max_attempts,
         target=target,
@@ -354,7 +341,13 @@ def fix(
 # Named pipeline registry
 # ---------------------------------------------------------------------------
 
-_AVAILABLE_PIPELINES: list[str] = ["document-staging"]
+_AVAILABLE_PIPELINES: list[str] = [
+    "document-staging",
+    "fix-nulls",
+    "review-staging",
+    "debug-pipeline",
+    "drift-check",
+]
 
 
 def _build_document_staging_pipeline(
@@ -400,13 +393,167 @@ def _build_document_staging_pipeline(
     return pipeline, initial_inputs
 
 
+def _build_fix_nulls_pipeline(
+    model_name: str,
+    profile_summary: str,
+    model_sql: str,
+    model_path: str,
+    project_root: Path,
+    dry_run: bool,
+) -> tuple[object, dict]:
+    """Construct the fix-nulls WorkerPipeline and initial_inputs dict."""
+    from tycoon.ai.workers.base import WorkerPipeline
+    from tycoon.ai.workers.staging import NullHandler
+    from tycoon.ai.workers.tests import TestWriter
+
+    steps = [
+        (
+            NullHandler(),
+            {
+                "model_name": "model_name",
+                "model_sql": "model_sql",
+                "profile_summary": "profile_summary",
+            },
+        ),
+        (
+            TestWriter(),
+            {
+                "model_name": "model_name",
+                "model_path": "model_path",
+                "profile_summary": "profile_summary",
+            },
+        ),
+    ]
+
+    pipeline = WorkerPipeline(steps=steps, project_root=project_root, dry_run=dry_run)
+    initial_inputs = {
+        "model_name": model_name,
+        "profile_summary": profile_summary,
+        "model_sql": model_sql,
+        "model_path": model_path,
+    }
+    return pipeline, initial_inputs
+
+
+def _build_review_staging_pipeline(
+    model_name: str,
+    profile_summary: str,
+    model_sql: str,
+    model_path: str,
+    project_root: Path,
+    dry_run: bool,
+) -> tuple[object, dict]:
+    """Construct the review-staging WorkerPipeline and initial_inputs dict."""
+    from tycoon.ai.workers.base import WorkerPipeline
+    from tycoon.ai.workers.staging import StagingImprover, ColumnRenamer, ColumnDocumenter
+
+    steps = [
+        (
+            StagingImprover(),
+            {
+                "model_name": "model_name",
+                "model_sql": "model_sql",
+                "profile_summary": "profile_summary",
+            },
+        ),
+        (
+            ColumnRenamer(),
+            {
+                "model_name": "model_name",
+                "model_sql": "model_sql",
+                "profile_summary": "profile_summary",
+            },
+        ),
+        (
+            ColumnDocumenter(),
+            {
+                "model_name": "model_name",
+                "profile_summary": "profile_summary",
+                "existing_schema_yaml": "existing_schema_yaml",
+            },
+        ),
+    ]
+
+    pipeline = WorkerPipeline(steps=steps, project_root=project_root, dry_run=dry_run)
+    initial_inputs = {
+        "model_name": model_name,
+        "profile_summary": profile_summary,
+        "model_sql": model_sql,
+        "model_path": model_path,
+        "existing_schema_yaml": "",
+    }
+    return pipeline, initial_inputs
+
+
+def _build_debug_pipeline_pipeline(
+    pipeline_name: str,
+    error_output: str,
+    source_config: str,
+    project_root: Path,
+    dry_run: bool,
+) -> tuple[object, dict]:
+    """Construct the debug-pipeline WorkerPipeline and initial_inputs dict."""
+    from tycoon.ai.workers.base import WorkerPipeline
+    from tycoon.ai.workers.ingestion import PipelineDebugger
+
+    steps = [
+        (
+            PipelineDebugger(),
+            {
+                "pipeline_name": "pipeline_name",
+                "error_output": "error_output",
+                "source_config": "source_config",
+            },
+        ),
+    ]
+
+    pipeline = WorkerPipeline(steps=steps, project_root=project_root, dry_run=dry_run)
+    initial_inputs = {
+        "pipeline_name": pipeline_name,
+        "error_output": error_output,
+        "source_config": source_config,
+    }
+    return pipeline, initial_inputs
+
+
+def _build_drift_check_pipeline(
+    expected_schema: str,
+    actual_schema: str,
+    source_name: str,
+    project_root: Path,
+    dry_run: bool,
+) -> tuple[object, dict]:
+    """Construct the drift-check WorkerPipeline and initial_inputs dict."""
+    from tycoon.ai.workers.base import WorkerPipeline
+    from tycoon.ai.workers.ingestion import SchemaDriftDetector
+
+    steps = [
+        (
+            SchemaDriftDetector(),
+            {
+                "source_name": "source_name",
+                "expected_schema": "expected_schema",
+                "actual_schema": "actual_schema",
+            },
+        ),
+    ]
+
+    pipeline = WorkerPipeline(steps=steps, project_root=project_root, dry_run=dry_run)
+    initial_inputs = {
+        "source_name": source_name,
+        "expected_schema": expected_schema,
+        "actual_schema": actual_schema,
+    }
+    return pipeline, initial_inputs
+
+
 @app.command(name="pipeline")
 def pipeline_cmd(
     name: Annotated[str, typer.Argument(help="Pipeline name (e.g. document-staging).")],
-    model: Annotated[str, typer.Option("--model", "-m", help="dbt model name to run the pipeline against.")],
+    model: Annotated[str, typer.Option("--model", "-m", help="dbt model name (or subject name for debug-pipeline / drift-check).")],
     db_path: Annotated[
         str | None,
-        typer.Option("--db", help="Path to DuckDB file. Defaults to config raw_db."),
+        typer.Option("--db", help="Path to DuckDB file. Defaults to config raw_db. For debug-pipeline pass the error log path; for drift-check pass expected schema path."),
     ] = None,
     schema: Annotated[str, typer.Option("--schema", help="DuckDB schema name.")] = "main",
     dry_run: Annotated[
@@ -418,11 +565,20 @@ def pipeline_cmd(
 
     Available pipelines:
         document-staging  — ColumnDocumenter → TestWriter
+        fix-nulls         — NullHandler → TestWriter
+        review-staging    — StagingImprover → ColumnRenamer → ColumnDocumenter
+        debug-pipeline    — PipelineDebugger (standalone; --model is the pipeline name,
+                            --db is the path to an error log file)
+        drift-check       — SchemaDriftDetector (standalone; --model is the source name,
+                            --db is the path to a file containing the expected schema;
+                            actual schema is read from stdin if --db is not provided)
 
     Examples:
         tycoon ai pipeline document-staging --model trips
-        tycoon ai pipeline document-staging --model events --dry-run
-        tycoon ai pipeline document-staging --model rides --db data/raw.duckdb
+        tycoon ai pipeline fix-nulls --model events --dry-run
+        tycoon ai pipeline review-staging --model rides --db data/raw.duckdb
+        tycoon ai pipeline debug-pipeline --model my_source --db error.log
+        tycoon ai pipeline drift-check --model pokemon --db expected_schema.txt
     """
     _ensure_ready()
 
@@ -431,38 +587,83 @@ def pipeline_cmd(
         info(f"Available pipelines: {', '.join(_AVAILABLE_PIPELINES)}")
         raise typer.Exit(1)
 
-    from tycoon.ai.profiler import profile_table
-
-    resolved_db = Path(db_path) if db_path else config.raw_db
-    info(f"Profiling table '{schema}.{model}' in {resolved_db} ...")
-
-    profile = profile_table(
-        db_path=resolved_db,
-        schema_name=schema,
-        table_name=model,
-    )
-
-    if profile is None:
-        error(
-            f"Table '{schema}.{model}' was not found in {resolved_db}.\n"
-            f"  Make sure the table exists and the database path is correct.\n"
-            f"  Run 'tycoon run' to ingest data first if needed."
-        )
-        raise typer.Exit(1)
-
-    profile_summary = profile.summary()
-    model_path = f"models/staging/stg_{model}.sql"
-
-    if name == "document-staging":
-        pipeline, initial_inputs = _build_document_staging_pipeline(
-            model_name=model,
-            profile_summary=profile_summary,
-            model_path=model_path,
+    # debug-pipeline and drift-check do not profile a DuckDB table
+    if name == "debug-pipeline":
+        error_output = Path(db_path).read_text() if db_path else ""
+        pipeline, initial_inputs = _build_debug_pipeline_pipeline(
+            pipeline_name=model,
+            error_output=error_output,
+            source_config="",
             project_root=config.root,
             dry_run=dry_run,
         )
+    elif name == "drift-check":
+        expected_schema = Path(db_path).read_text() if db_path else ""
+        import sys
+        actual_schema = sys.stdin.read() if not sys.stdin.isatty() else ""
+        pipeline, initial_inputs = _build_drift_check_pipeline(
+            expected_schema=expected_schema,
+            actual_schema=actual_schema,
+            source_name=model,
+            project_root=config.root,
+            dry_run=dry_run,
+        )
+    else:
+        from tycoon.ai.profiler import profile_table
 
-    step_names = ["ColumnDocumenter", "TestWriter"] if name == "document-staging" else []
+        resolved_db = Path(db_path) if db_path else config.raw_db
+        info(f"Profiling table '{schema}.{model}' in {resolved_db} ...")
+
+        profile = profile_table(
+            db_path=resolved_db,
+            schema_name=schema,
+            table_name=model,
+        )
+
+        if profile is None:
+            error(
+                f"Table '{schema}.{model}' was not found in {resolved_db}.\n"
+                f"  Make sure the table exists and the database path is correct.\n"
+                f"  Run 'tycoon run' to ingest data first if needed."
+            )
+            raise typer.Exit(1)
+
+        profile_summary = profile.summary()
+        model_path = f"models/staging/stg_{model}.sql"
+
+        if name == "document-staging":
+            pipeline, initial_inputs = _build_document_staging_pipeline(
+                model_name=model,
+                profile_summary=profile_summary,
+                model_path=model_path,
+                project_root=config.root,
+                dry_run=dry_run,
+            )
+        elif name == "fix-nulls":
+            model_sql_path = config.dbt_project_dir / model_path
+            model_sql = model_sql_path.read_text() if model_sql_path.exists() else ""
+            pipeline, initial_inputs = _build_fix_nulls_pipeline(
+                model_name=model,
+                profile_summary=profile_summary,
+                model_sql=model_sql,
+                model_path=model_path,
+                project_root=config.root,
+                dry_run=dry_run,
+            )
+        elif name == "review-staging":
+            model_sql_path = config.dbt_project_dir / model_path
+            model_sql = model_sql_path.read_text() if model_sql_path.exists() else ""
+            pipeline, initial_inputs = _build_review_staging_pipeline(
+                model_name=model,
+                profile_summary=profile_summary,
+                model_sql=model_sql,
+                model_path=model_path,
+                project_root=config.root,
+                dry_run=dry_run,
+            )
+
+    # Derive step names from the pipeline's worker instances
+    step_names = [worker.name for worker, _ in pipeline.steps]
 
     if dry_run:
         warn("Dry run: proposals will be shown but not written to disk.")
