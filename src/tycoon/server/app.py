@@ -1,41 +1,29 @@
-"""FastAPI application factory for the Tycoon dashboard server."""
+from fastapi import FastAPI, Response
+from tycoon import __version__
 
-from __future__ import annotations
+app = FastAPI()
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+@app.get("/")
+def root():
+    return {"message": "Welcome to Tycoon", "version": __version__}
 
-from tycoon.server.routes import router as api_router
-from tycoon.server.spa import SPA_HTML
-from tycoon.server.websocket import router as ws_router
+@app.get("/check-updates")
+def check_updates():
+    """Check for updates to the tycoon package."""
+    import requests
+    from packaging.version import parse as parse_version
 
-
-def create_app() -> FastAPI:
-    """Build and return the configured FastAPI application."""
-    app = FastAPI(
-        title="Tycoon Dashboard",
-        description="Local-first analytics dashboard for NYC transit data.",
-    )
-
-    # CORS — allow all origins for local development
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    # API routes
-    app.include_router(api_router)
-
-    # WebSocket routes
-    app.include_router(ws_router)
-
-    # SPA catch-all — serve the embedded HTML at root
-    @app.get("/", response_class=HTMLResponse)
-    async def spa_root() -> str:
-        return SPA_HTML
-
-    return app
+    try:
+        response = requests.get("https://pypi.org/pypi/tycoon/json")
+        response.raise_for_status()
+        latest_version = parse_version(response.json()["info"]["version"])
+        current_version = parse_version(__version__)
+        
+        if latest_version > current_version:
+            return {"update_available": True, "current_version": str(current_version), "latest_version": str(latest_version)}
+        else:
+            return {"update_available": False, "current_version": str(current_version), "latest_version": str(latest_version)}
+    except requests.RequestException as e:
+        return {"error": f"Failed to check for updates: {e}"}
+    except KeyError as e:
+        return {"error": f"Unexpected response format: missing key {e}"}
