@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 import typer
+import requests
+import packaging.version
+from typing import Optional, cast
+from __future__ import annotations
+
+import typer
 from typer.core import TyperGroup
 
 import tycoon
 
-_COMMAND_ORDER = ["init", "data", "ai", "start", "stop", "run"]
+_COMMAND_ORDER = ["init", "data", "ai", "start", "stop", "run", "check-updates"]
 
 _SECTIONS = {
     "init":  "Project",
@@ -16,6 +22,7 @@ _SECTIONS = {
     "start": "Services",
     "stop":  "Services",
     "run":   "Tools",
+    "check-updates": "Utilities"
 }
 
 
@@ -49,6 +56,24 @@ app = typer.Typer(
 )
 
 
+def check_updates() -> None:
+    """
+    Check if there's a newer version of Tycoon available on PyPI.
+    """
+    try:
+        response = requests.get("https://pypi.org/pypi/tycoon/json")
+        response.raise_for_status()
+        latest_version = packaging.version.parse(response.json()["info"]["version"])
+        current_version = packaging.version.parse(tycoon.__version__)
+        
+        if latest_version > current_version:
+            typer.echo(f"A newer version of Tycoon is available: {latest_version}")
+        else:
+            typer.echo("You're already running the latest version.")
+    except Exception as e:
+        typer.secho(f"Failed to check updates: {e}", fg=typer.colors.RED)
+
+
 def _version_callback(value: bool) -> None:
     if value:
         typer.echo(f"tycoon {tycoon.__version__}")
@@ -75,6 +100,7 @@ from tycoon.commands.run import run_cmd
 from tycoon.commands.start import start_cmd
 from tycoon.commands.stop import stop_cmd
 
+
 app.command(name="init")(init_cmd)
 app.add_typer(data.app, name="data")
 app.add_typer(ai.app, name="ai")
@@ -84,3 +110,4 @@ app.command(
     name="run",
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )(run_cmd)
+app.command(name="check-updates")(check_updates)
