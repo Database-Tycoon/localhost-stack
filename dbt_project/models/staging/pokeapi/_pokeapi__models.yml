@@ -1,0 +1,31 @@
+version: 2
+sources:
+- name: pokeapi
+  database: raw
+  schema: raw_pokeapi
+  tables:
+  - name: berry
+  - name: pokemon
+  - name: type
+models:
+- name: stg_pokeapi__berry
+  description: Staging model for berry from pokeapi
+  columns:
+  - name: name
+    description: name from source
+  - name: url
+    description: url from source
+- name: stg_pokeapi__pokemon
+  description: Staging model for pokemon from pokeapi
+  columns:
+  - name: name
+    description: name from source
+  - name: url
+    description: url from source
+- name: stg_pokeapi__type
+  description: Staging model for type from pokeapi
+  columns:
+  - name: name
+    description: name from source
+  - name: url
+    description: url from source

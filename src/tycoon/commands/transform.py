@@ -37,6 +37,7 @@ def _run_dbt(
         project_dir=dbt_project.project_dir,
         profiles_dir=dbt_project.profiles_dir,
         target=target,
+        dbt_executable=config.root / ".venv" / "bin" / "dbt",
     )
 
     cli_args = [dbt_cmd]
@@ -49,12 +50,10 @@ def _run_dbt(
 
     console.print(f"[dim]Running: dbt {' '.join(cli_args)} --target {target}[/dim]")
 
-    # dagster-dbt runs commands from within the project_dir, which is what we want
-    # for relative paths in profiles.yml to work correctly.
-    # It also streams stdout/stderr from the subprocess, so we don't need to capture.
-    invocation = dbt_cli.cli(cli_args).run()
+    invocation = dbt_cli.cli(args=cli_args, raise_on_error=False)
+    result = invocation.wait()
 
-    return 0 if invocation.is_success else 1
+    return 0 if result.is_successful() else 1
 
 
 # ---------------------------------------------------------------------------
@@ -163,6 +162,7 @@ def docs(
         project_dir=dbt_project.project_dir,
         profiles_dir=dbt_project.profiles_dir,
         target=target,
+        dbt_executable=config.root / ".venv" / "bin" / "dbt",
     )
     cli_args = ["docs", "serve", "--port", str(port)]
 
@@ -171,11 +171,9 @@ def docs(
     console.print("[dim]Press Ctrl+C to stop.[/dim]")
 
     try:
-        # Using .run() will block until completion and stream logs.
-        dbt_cli.cli(cli_args).run()
+        dbt_cli.cli(cli_args).wait()
     except KeyboardInterrupt:
         console.print("\n[dim]dbt docs server stopped.[/dim]")
     except Exception as exc:
-        # DagsterDbtCliRuntimeError is raised on non-zero exit code
         error(f"dbt docs serve failed: {exc}")
         raise typer.Exit(1)

@@ -33,7 +33,8 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['open', 'closed']
+              arguments:
+                values: ['open', 'closed']
       - name: is_open
         description: True when state = 'open'.
         tests:
@@ -93,7 +94,8 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['open', 'closed']
+              arguments:
+                values: ['open', 'closed']
       - name: is_merged
         description: True when the PR has a non-null merged_at timestamp.
         tests:

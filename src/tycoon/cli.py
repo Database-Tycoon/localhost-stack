@@ -1,27 +1,89 @@
-import click
-from tycoon import __version__
+"""Top-level Typer app — entry point for the `tycoon` CLI."""
 
-@click.group()
-def cli():
+from __future__ import annotations
+
+import typer
+from typer.core import TyperGroup
+
+import tycoon
+
+_COMMAND_ORDER = ["init", "data", "ai", "start", "stop", "run", "doctor"]
+
+_SECTIONS = {
+    "init":  "Project",
+    "data":  "Data Pipeline",
+    "ai":    "AI",
+    "start": "Services",
+    "stop":  "Services",
+    "run":   "Tools",
+    "doctor": "Utilities",
+}
+
+
+class _OrderedGroup(TyperGroup):
+    def list_commands(self, ctx: object) -> list[str]:
+        commands = super().list_commands(ctx)
+        return sorted(commands, key=lambda c: _COMMAND_ORDER.index(c) if c in _COMMAND_ORDER else 99)
+
+    def format_commands(self, ctx: object, formatter: object) -> None:
+        seen: dict[str, list[tuple[str, str]]] = {}
+        for name in self.list_commands(ctx):
+            cmd = self.commands.get(name)
+            if cmd is None or getattr(cmd, "hidden", False):
+                continue
+            section = _SECTIONS.get(name, "Commands")
+            seen.setdefault(section, []).append(
+                (name, cmd.get_short_help_str(limit=formatter.width))
+            )
+        for section, rows in seen.items():
+            with formatter.section(section):
+                formatter.write_dl(rows)
+
+
+app = typer.Typer(
+    name="tycoon",
+    help="Database Tycoon — local-first analytics CLI for exploring any dataset.",
+    no_args_is_help=True,
+    pretty_exceptions_enable=False,
+    rich_markup_mode=None,
+    cls=_OrderedGroup,
+)
+
+
+def _version_callback(value: bool) -> None:
+    if value:
+        typer.echo(f"tycoon {tycoon.__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def _root(
+    version: bool = typer.Option(
+        False,
+        "--version",
+        "-V",
+        help="Print version and exit.",
+        callback=_version_callback,
+        is_eager=True,
+    ),
+) -> None:
     pass
 
-@cli.command()
-def check_updates():
-    """Check for updates to the tycoon package."""
-    import requests
-    from packaging.version import parse as parse_version
 
-    try:
-        response = requests.get("https://pypi.org/pypi/tycoon/json")
-        response.raise_for_status()
-        latest_version = parse_version(response.json()["info"]["version"])
-        current_version = parse_version(__version__)
-        
-        if latest_version > current_version:
-            print(f"Update available: {latest_version} (you have {current_version})")
-        else:
-            print(f"No updates available. You have version {current_version}")
-    except requests.RequestException as e:
-        print(f"Failed to check for updates: {e}")
-    except KeyError as e:
-        print(f"Unexpected response format: missing key {e}")
+from tycoon.commands import ai, data
+from tycoon.commands.doctor import doctor_cmd
+from tycoon.commands.init import init_cmd
+from tycoon.commands.run import run_cmd
+from tycoon.commands.start import start_cmd
+from tycoon.commands.stop import stop_cmd
+
+app.command(name="init")(init_cmd)
+app.add_typer(data.app, name="data")
+app.add_typer(ai.app, name="ai")
+app.command(name="start")(start_cmd)
+app.command(name="stop")(stop_cmd)
+app.command(
+    name="run",
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+)(run_cmd)
+app.command(name="doctor")(doctor_cmd)

@@ -1,0 +1,13 @@
+type: explore
+title: type
+description: Auto-generated explore for pokeapi/type
+model: stg_pokeapi__type
+dimensions:
+- column: name
+  label: Name
+- column: url
+  label: Url
+measures:
+- expression: count(*)
+  label: Record Count
+  format: '#,##0'

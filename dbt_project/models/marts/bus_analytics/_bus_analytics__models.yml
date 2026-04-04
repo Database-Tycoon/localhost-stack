@@ -25,7 +25,8 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['Queens', 'Bronx', 'Brooklyn', 'Manhattan', 'Staten Island', 'Unknown']
+              arguments:
+                values: ['Queens', 'Bronx', 'Brooklyn', 'Manhattan', 'Staten Island', 'Unknown']
 
   - name: dim_bus_stops
     description: MTA bus stops dimension with geographic coordinates.
@@ -116,7 +117,8 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['A', 'B', 'C', 'D', 'F']
+              arguments:
+                values: ['A', 'B', 'C', 'D', 'F']
       - name: route_avg_speed_mph
         description: Average speed across all segments for the route on this date.
         tests:

@@ -50,7 +50,8 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['Winter', 'Spring', 'Summer', 'Fall']
+              arguments:
+                values: ['Winter', 'Spring', 'Summer', 'Fall']
       - name: fiscal_year
         description: NYC fiscal year (starts July 1; July 2024 = FY2025).
         tests:
@@ -72,7 +73,8 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['AM Peak', 'Midday', 'PM Peak', 'Evening', 'Overnight']
+              arguments:
+                values: ['AM Peak', 'Midday', 'PM Peak', 'Evening', 'Overnight']
       - name: is_peak_hour
         description: True if the hour falls within a peak period (7-19).
         tests:

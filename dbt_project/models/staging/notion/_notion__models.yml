@@ -16,7 +16,8 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['person', 'bot']
+              arguments:
+                values: ['person', 'bot']
       - name: name
         description: Display name of the user or bot.
       - name: avatar_url

@@ -1,0 +1,13 @@
+type: explore
+title: pokemon
+description: Auto-generated explore for pokeapi/pokemon
+model: stg_pokeapi__pokemon
+dimensions:
+- column: name
+  label: Name
+- column: url
+  label: Url
+measures:
+- expression: count(*)
+  label: Record Count
+  format: '#,##0'

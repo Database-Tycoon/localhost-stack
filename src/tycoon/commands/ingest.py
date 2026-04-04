@@ -27,7 +27,9 @@ MaxRecordsOption = Annotated[
 
 @app.command(name="run")
 def run_source(
-    source_name: Annotated[str, typer.Argument(help="Name of the registered source to ingest.")],
+    source_name: Annotated[
+        Optional[str], typer.Argument(help="Name of the registered source to ingest.")
+    ] = None,
     max_records: MaxRecordsOption = None,
 ) -> None:
     """Ingest data from a registered source by name."""
@@ -38,8 +40,20 @@ def run_source(
         raise typer.Exit(1)
 
     sources = config.sources
+    if not source_name:
+        if not sources:
+            error("No sources found in tycoon.yml. Run 'tycoon sources add' first.")
+            raise typer.Exit(1)
+        source_name = typer.prompt(
+            "Choose a source to ingest",
+            type=typer.Choice(list(sources.keys())),
+            show_choices=True,
+        )
+
     if source_name not in sources:
-        error(f"Source '{source_name}' not found. Available: {', '.join(sources.keys()) or '(none)'}")
+        error(
+            f"Source '{source_name}' not found. Available: {', '.join(sources.keys()) or '(none)'}"
+        )
         raise typer.Exit(1)
 
     source_config = sources[source_name]

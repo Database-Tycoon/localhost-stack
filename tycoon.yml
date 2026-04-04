@@ -32,12 +32,6 @@ sources:
       - 58t6-89vi
       - kufs-yh3x
     schema: raw_mta_bus_speeds
-  pokemon:
-    type: rest_api
-    config:
-      base_url: https://pokeapi.co/api/v2/
-      resources: pokemon,berry,type
-    schema: raw_pokemon
   pokeapi:
     type: rest_api
     config:

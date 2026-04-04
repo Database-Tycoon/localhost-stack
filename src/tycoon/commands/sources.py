@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 import typer
 from rich.table import Table
@@ -209,10 +209,14 @@ _AUTO_NAMED_SOURCES: set[str] = {"rest_api", "filesystem"}
 
 @app.command("add")
 def add_source(
-    source_type: str = typer.Argument(help="Source type — run 'tycoon sources catalog' to see all options"),
+    source_type: Optional[str] = typer.Argument(None, help="Source type — run 'tycoon sources catalog' to see all options"),
 ) -> None:
     """Interactively register a new data source."""
     _require_project()
+
+    if not source_type:
+        show_catalog()
+        source_type = typer.prompt("Enter a source type from the catalog")
 
     catalog_entry = CATALOG.get(source_type)
 

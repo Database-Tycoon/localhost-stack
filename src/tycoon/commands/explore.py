@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Optional
 
 import typer
 
@@ -14,9 +14,9 @@ from tycoon.utils.console import ai_hint, error, header, info, success, warn
 
 def explore_cmd(
     source_name: Annotated[
-        str,
+        Optional[str],
         typer.Argument(help="Name of the registered source to explore."),
-    ],
+    ] = None,
     no_rill: Annotated[
         bool,
         typer.Option(
@@ -56,6 +56,16 @@ def explore_cmd(
 
     # 2. Verify source is registered
     sources = config.sources
+    if not source_name:
+        if not sources:
+            error("No sources found in tycoon.yml. Run 'tycoon sources add' first.")
+            raise typer.Exit(1)
+        source_name = typer.prompt(
+            "Choose a source to explore",
+            type=typer.Choice(list(sources.keys())),
+            show_choices=True,
+        )
+
     if source_name not in sources:
         error(
             f"Source '{source_name}' not found in tycoon.yml. "

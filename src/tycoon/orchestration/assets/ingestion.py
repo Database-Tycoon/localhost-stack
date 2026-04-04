@@ -52,6 +52,7 @@ def _make_ingestion_asset(source_name: str):
             }
         )
 
+    _ingest.__name__ = f"ingest_{source_name.replace('-', '_')}"
     return _ingest
 
 
