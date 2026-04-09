@@ -75,13 +75,15 @@ class TycoonConfig:
     @property
     def dbt_project_dir(self) -> Path:
         if self._project:
-            return self.root / self._project.dbt_project_dir
+            p = Path(self._project.dbt_project_dir)
+            return p if p.is_absolute() else (self.root / p).resolve()
         return self.root / _DEFAULT_DBT_DIR
 
     @property
     def rill_dir(self) -> Path:
         if self._project:
-            return self.root / self._project.rill_dir
+            p = Path(self._project.rill_dir)
+            return p if p.is_absolute() else (self.root / p).resolve()
         return self.root / _DEFAULT_RILL_DIR
 
     @property

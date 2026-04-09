@@ -7,6 +7,7 @@ named template.
 
 from __future__ import annotations
 
+import os
 import shutil
 from pathlib import Path
 
@@ -14,6 +15,15 @@ import yaml
 
 from tycoon.project import StackConfig
 from tycoon.utils.console import info, success, warn
+
+
+def _project_relative(tycoon_root: Path, path: Path) -> str:
+    """Return a path relative to tycoon_root if possible, else absolute string."""
+    try:
+        return os.path.relpath(path, start=tycoon_root)
+    except ValueError:
+        # Different drives on Windows
+        return str(path)
 
 
 # ---------------------------------------------------------------------------
@@ -112,7 +122,12 @@ def scaffold_blank_project(
         raw_db_path = "data/raw.duckdb"
         warehouse_db_path = "data/warehouse.duckdb"
 
-    dbt_project_dir = existing_dbt_path or "dbt_project"
+    # Resolve dbt path — may be external, store relative to tycoon.yml
+    if existing_dbt_path:
+        dbt_abs = Path(existing_dbt_path).resolve()
+        dbt_project_dir = _project_relative(target, dbt_abs)
+    else:
+        dbt_project_dir = "dbt_project"
 
     # tycoon.yml
     project_data: dict = {
@@ -142,11 +157,14 @@ def scaffold_blank_project(
     (target / "data").mkdir(parents=True, exist_ok=True)
     info("Created data/")
 
-    # dbt_project/ — skip when pointing at an existing project
-    if existing_dbt_path:
+    # dbt_project/ — scaffold at resolved external path, or skip if existing
+    dbt_abs = Path(existing_dbt_path).resolve() if existing_dbt_path else None
+    dbt_already_exists = dbt_abs and dbt_abs.exists() and (dbt_abs / "dbt_project.yml").exists()
+
+    if dbt_already_exists:
         info(f"Using existing dbt project at {existing_dbt_path}")
     elif not stack or stack.transformation_managed:
-        dbt_dir = target / "dbt_project"
+        dbt_dir = dbt_abs if dbt_abs else (target / "dbt_project")
         dbt_dir.mkdir(parents=True, exist_ok=True)
 
         profile_name = name.replace("-", "_")
@@ -161,7 +179,8 @@ def scaffold_blank_project(
             yaml.dump(dbt_project_yml, default_flow_style=False, sort_keys=False)
         )
 
-        # profiles.yml: warehouse DB is the dbt target; raw DB is attached read-only
+        # profiles.yml: warehouse DB is the dbt target; raw DB is attached read-only.
+        # Paths are relative from dbt_dir, which may be a sibling of the tycoon root.
         if stack and stack.warehouse == WarehouseType.motherduck:
             profiles_data = {
                 profile_name: {
@@ -176,8 +195,10 @@ def scaffold_blank_project(
                 }
             }
         else:
-            warehouse_rel = f"../{warehouse_db_path}"
-            raw_rel = f"../{raw_db_path}"
+            warehouse_abs = (target / warehouse_db_path).resolve()
+            raw_abs = (target / raw_db_path).resolve()
+            warehouse_rel = os.path.relpath(warehouse_abs, start=dbt_dir)
+            raw_rel = os.path.relpath(raw_abs, start=dbt_dir)
             profiles_data = {
                 profile_name: {
                     "target": "dev",
@@ -194,7 +215,7 @@ def scaffold_blank_project(
         (dbt_dir / "profiles.yml").write_text(
             yaml.dump(profiles_data, default_flow_style=False, sort_keys=False)
         )
-        info("Created dbt_project/ with dbt_project.yml and profiles.yml")
+        info(f"Created dbt project at {dbt_dir} with dbt_project.yml and profiles.yml")
 
     # .gitignore
     _write_gitignore(target)

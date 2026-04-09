@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Annotated, Optional
 
@@ -113,14 +114,20 @@ def _run_wizard(target: Path, project_name: str) -> tuple[StackConfig, str | Non
         console.print()
         has_dbt = typer.confirm("Do you have an existing dbt project?", default=bool(detected.get("dbt_project")))
         if has_dbt:
-            default_dbt = detected.get("dbt_project", "dbt_project")
-            # strip dbt_project.yml to get the dir
+            default_dbt = detected.get("dbt_project", "")
             if default_dbt.endswith("dbt_project.yml"):
                 default_dbt = str(Path(default_dbt).parent)
-            existing_dbt_path = typer.prompt("Path to your dbt project directory", default=default_dbt)
+            existing_dbt_path = typer.prompt("Path to your dbt project directory", default=default_dbt or str(target.parent / f"{project_name}-dbt"))
             transformation_managed = False
         else:
-            transformation_managed = True
+            create_dbt = typer.confirm("Would you like tycoon to scaffold a dbt project?", default=True)
+            if create_dbt:
+                default_new_dbt = str(target.parent / f"{project_name}-dbt")
+                existing_dbt_path = typer.prompt("Where should the dbt project live?", default=default_new_dbt)
+                transformation_managed = True
+            else:
+                existing_dbt_path = None
+                transformation_managed = False
 
         # --- BI Tool ---
         console.print()
@@ -188,6 +195,11 @@ def _run_wizard(target: Path, project_name: str) -> tuple[StackConfig, str | Non
             warehouse = WarehouseType.motherduck
         else:
             warehouse = WarehouseType.duckdb
+
+        # dbt location
+        console.print()
+        default_new_dbt = str(target.parent / f"{project_name}-dbt")
+        existing_dbt_path = typer.prompt("Where should the dbt project live?", default=default_new_dbt)
 
         # BI tool
         console.print("\nWhich BI / dashboard tool would you like to use?")
