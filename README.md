@@ -79,8 +79,6 @@ Already have a pipeline? `tycoon init` will ask about your ingestion tool, wareh
 | `tycoon data setup` | Run the built-in NYC demo setup |
 | `tycoon start` | Start Rill, Dagster, Nao, and the web UI |
 | `tycoon stop` | Stop all services |
-| `tycoon ai fix` | Auto-fix failing dbt tests with AI |
-| `tycoon ai pipeline <name>` | Run a named AI worker pipeline |
 | `tycoon ask chat` | Query your data in natural language (Nao) |
 | `tycoon run <tool>` | Passthrough to dbt, dlt, rill, dagster |
 
