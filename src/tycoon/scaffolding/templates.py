@@ -12,6 +12,7 @@ from pathlib import Path
 
 import yaml
 
+from tycoon.project import StackConfig
 from tycoon.utils.console import info, success, warn
 
 
@@ -81,34 +82,58 @@ dbt_project/logs/
 """
 
 
-def scaffold_blank_project(target: Path, name: str) -> None:
+def scaffold_blank_project(
+    target: Path,
+    name: str,
+    stack: StackConfig | None = None,
+    existing_dbt_path: str | None = None,
+    existing_warehouse_path: str | None = None,
+) -> None:
     """Create a minimal tycoon project with an empty ``tycoon.yml``.
 
     Creates:
-    - ``tycoon.yml`` with the given project name and default database paths
+    - ``tycoon.yml`` with the given project name and database paths
     - ``data/`` directory
     - ``dbt_project/`` with minimal ``dbt_project.yml`` and ``profiles.yml``
+      (skipped when ``existing_dbt_path`` is provided)
     - ``.gitignore``
-
-    The generated ``profiles.yml`` uses the database paths declared in the
-    project config (``database.raw`` and ``database.warehouse``) so that dbt
-    targets are consistent with tycoon's own path resolution.
     """
-    raw_db_path = "data/raw.duckdb"
-    warehouse_db_path = "data/warehouse.duckdb"
+    from tycoon.project import WarehouseType
+
+    # Resolve database paths based on warehouse type
+    if stack and stack.warehouse == WarehouseType.motherduck:
+        safe_name = name.replace("-", "_")
+        raw_db_path = f"md:{safe_name}_raw"
+        warehouse_db_path = f"md:{safe_name}"
+    elif existing_warehouse_path:
+        raw_db_path = existing_warehouse_path
+        warehouse_db_path = existing_warehouse_path
+    else:
+        raw_db_path = "data/raw.duckdb"
+        warehouse_db_path = "data/warehouse.duckdb"
+
+    dbt_project_dir = existing_dbt_path or "dbt_project"
 
     # tycoon.yml
-    project_data = {
+    project_data: dict = {
         "name": name,
         "version": "0.1.0",
         "database": {
             "raw": raw_db_path,
             "warehouse": warehouse_db_path,
         },
-        "dbt_project_dir": "dbt_project",
+        "dbt_project_dir": dbt_project_dir,
         "rill_dir": "rill",
         "sources": {},
     }
+    if stack:
+        project_data["stack"] = {
+            "ingestion": stack.ingestion.value,
+            "ingestion_managed": stack.ingestion_managed,
+            "warehouse": stack.warehouse.value,
+            "transformation_managed": stack.transformation_managed,
+        }
+
     yml_path = target / "tycoon.yml"
     yml_path.write_text(yaml.dump(project_data, default_flow_style=False, sort_keys=False))
     success(f"Created {yml_path.relative_to(target)}")
@@ -117,49 +142,59 @@ def scaffold_blank_project(target: Path, name: str) -> None:
     (target / "data").mkdir(parents=True, exist_ok=True)
     info("Created data/")
 
-    # dbt_project/
-    dbt_dir = target / "dbt_project"
-    dbt_dir.mkdir(parents=True, exist_ok=True)
+    # dbt_project/ — skip when pointing at an existing project
+    if existing_dbt_path:
+        info(f"Using existing dbt project at {existing_dbt_path}")
+    elif not stack or stack.transformation_managed:
+        dbt_dir = target / "dbt_project"
+        dbt_dir.mkdir(parents=True, exist_ok=True)
 
-    profile_name = name.replace("-", "_")
+        profile_name = name.replace("-", "_")
 
-    dbt_project_yml = {
-        "name": profile_name,
-        "version": "1.0.0",
-        "config-version": 2,
-        "profile": profile_name,
-    }
-    (dbt_dir / "dbt_project.yml").write_text(
-        yaml.dump(dbt_project_yml, default_flow_style=False, sort_keys=False)
-    )
-
-    # profiles.yml: warehouse DB is the dbt target; raw DB is attached read-only
-    # Paths are relative to dbt_project_dir (one level above data/)
-    warehouse_rel = f"../{warehouse_db_path}"
-    raw_rel = f"../{raw_db_path}"
-
-    profiles_data = {
-        profile_name: {
-            "target": "dev",
-            "outputs": {
-                "dev": {
-                    "type": "duckdb",
-                    "path": warehouse_rel,
-                    "attach": [
-                        {
-                            "path": raw_rel,
-                            "alias": "raw",
-                            "read_only": True,
-                        }
-                    ],
-                }
-            },
+        dbt_project_yml = {
+            "name": profile_name,
+            "version": "1.0.0",
+            "config-version": 2,
+            "profile": profile_name,
         }
-    }
-    (dbt_dir / "profiles.yml").write_text(
-        yaml.dump(profiles_data, default_flow_style=False, sort_keys=False)
-    )
-    info("Created dbt_project/ with dbt_project.yml and profiles.yml")
+        (dbt_dir / "dbt_project.yml").write_text(
+            yaml.dump(dbt_project_yml, default_flow_style=False, sort_keys=False)
+        )
+
+        # profiles.yml: warehouse DB is the dbt target; raw DB is attached read-only
+        if stack and stack.warehouse == WarehouseType.motherduck:
+            profiles_data = {
+                profile_name: {
+                    "target": "dev",
+                    "outputs": {
+                        "dev": {
+                            "type": "duckdb",
+                            "path": warehouse_db_path,
+                            "attach": [{"path": raw_db_path, "alias": "raw", "read_only": True}],
+                        }
+                    },
+                }
+            }
+        else:
+            warehouse_rel = f"../{warehouse_db_path}"
+            raw_rel = f"../{raw_db_path}"
+            profiles_data = {
+                profile_name: {
+                    "target": "dev",
+                    "outputs": {
+                        "dev": {
+                            "type": "duckdb",
+                            "path": warehouse_rel,
+                            "attach": [{"path": raw_rel, "alias": "raw", "read_only": True}],
+                        }
+                    },
+                }
+            }
+
+        (dbt_dir / "profiles.yml").write_text(
+            yaml.dump(profiles_data, default_flow_style=False, sort_keys=False)
+        )
+        info("Created dbt_project/ with dbt_project.yml and profiles.yml")
 
     # .gitignore
     _write_gitignore(target)

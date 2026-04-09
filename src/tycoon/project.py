@@ -4,11 +4,57 @@ from __future__ import annotations
 
 import os
 import re
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
 import yaml
 from pydantic import BaseModel, Field
+
+
+class IngestionTool(str, Enum):
+    dlt = "dlt"
+    airbyte = "airbyte"
+    fivetran = "fivetran"
+    meltano = "meltano"
+    none = "none"
+
+
+class WarehouseType(str, Enum):
+    duckdb = "duckdb"
+    motherduck = "motherduck"
+    snowflake = "snowflake"
+    bigquery = "bigquery"
+    redshift = "redshift"
+    other = "other"
+
+
+class BITool(str, Enum):
+    rill = "rill"
+    metabase = "metabase"
+    looker = "looker"
+    tableau = "tableau"
+    other = "other"
+    none = "none"
+
+
+class OrchestratorTool(str, Enum):
+    dagster = "dagster"
+    airflow = "airflow"
+    prefect = "prefect"
+    other = "other"
+    none = "none"
+
+
+class StackConfig(BaseModel):
+    ingestion: IngestionTool = IngestionTool.dlt
+    ingestion_managed: bool = True
+    warehouse: WarehouseType = WarehouseType.duckdb
+    transformation_managed: bool = True
+    bi: BITool = BITool.rill
+    bi_managed: bool = True
+    orchestrator: OrchestratorTool = OrchestratorTool.dagster
+    orchestrator_managed: bool = True
 
 
 def _interpolate_env(value: str) -> str:
@@ -85,6 +131,7 @@ class TycoonProject(BaseModel):
     dbt_project_dir: str = Field(default="dbt_project", description="Path to dbt project")
     rill_dir: str = Field(default="rill", description="Path to Rill dashboards")
     ask: AskConfig | None = Field(default=None, description="Nao analytics agent configuration")
+    stack: StackConfig = Field(default_factory=StackConfig)
 
 
 PROJECT_FILENAME = "tycoon.yml"
