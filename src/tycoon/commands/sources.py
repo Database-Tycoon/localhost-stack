@@ -71,33 +71,6 @@ def catalog_default(ctx: typer.Context) -> None:
         _show_catalog()
 
 
-@catalog_app.command("install")
-def install_source_cmd(
-    source_type: str = typer.Argument(help="Catalog source type to install (e.g. github, slack)"),
-) -> None:
-    """Download a catalog source via dlt init into ~/.tycoon/sources/."""
-    from tycoon.ingestion.source_manager import install_source, is_source_installed
-
-    if source_type not in CATALOG:
-        error(f"[bold]{source_type}[/bold] is not a known catalog source.")
-        info("Run [bold]tycoon data sources catalog[/bold] to see available sources.")
-        raise typer.Exit(1)
-
-    if is_source_installed(source_type):
-        info(f"Source [bold]{source_type}[/bold] is already installed.")
-        return
-
-    info(f"Running dlt init {source_type} ...")
-    if install_source(source_type):
-        success(f"Source [bold]{source_type}[/bold] installed to ~/.tycoon/sources/")
-        next_steps(
-            (f"tycoon data sources run {source_type}", "run the pipeline"),
-        )
-    else:
-        error(f"Failed to install [bold]{source_type}[/bold]. Check that dlt is installed.")
-        raise typer.Exit(1)
-
-
 # ---------------------------------------------------------------------------
 # list sub-group
 # ---------------------------------------------------------------------------
