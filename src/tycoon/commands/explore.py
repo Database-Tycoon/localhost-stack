@@ -142,7 +142,8 @@ def analyze_cmd(
             if rill_files:
                 success(f"Generated {len(rill_files)} Rill file(s) in {rill_dir}")
                 for f in rill_files:
-                    info(f"  {Path(f).name}")
+                    rel = Path(f).relative_to(rill_dir) if Path(f).is_relative_to(rill_dir) else Path(f).name
+                    info(f"  {rel}")
             else:
                 warn("No Rill files generated.")
         except Exception as exc:
