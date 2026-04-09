@@ -15,6 +15,21 @@ from tycoon.utils.console import ai_hint, console, error, header, info, next_ste
 
 app = typer.Typer(help="Manage registered data sources.")
 
+catalog_app = typer.Typer(
+    help="Browse and install source integrations.",
+    invoke_without_command=True,
+    no_args_is_help=False,
+)
+
+list_app = typer.Typer(
+    help="List registered sources and inspect their config.",
+    invoke_without_command=True,
+    no_args_is_help=False,
+)
+
+app.add_typer(catalog_app, name="catalog")
+app.add_typer(list_app, name="list")
+
 
 def _require_project() -> None:
     """Abort if no tycoon.yml exists."""
@@ -23,9 +38,13 @@ def _require_project() -> None:
         raise typer.Exit(1)
 
 
-@app.command("catalog")
-def show_catalog() -> None:
-    """Browse all pre-built source integrations."""
+# ---------------------------------------------------------------------------
+# catalog sub-group
+# ---------------------------------------------------------------------------
+
+
+def _show_catalog() -> None:
+    """Print the source catalog table."""
     table = Table(title="Source Catalog", show_lines=True)
     table.add_column("Type", style="cyan bold")
     table.add_column("Category", style="dim")
@@ -42,18 +61,56 @@ def show_catalog() -> None:
 
     console.print(table)
     console.print()
-    info("Add a source with: [bold]tycoon sources add <type>[/bold]  (e.g. tycoon sources add github)")
+    info("Add a source with: [bold]tycoon data sources add <type>[/bold]  (e.g. tycoon data sources add github)")
 
 
-@app.command("list")
-def list_sources() -> None:
-    """List all registered data sources."""
+@catalog_app.callback()
+def catalog_default(ctx: typer.Context) -> None:
+    """Browse available source integrations."""
+    if ctx.invoked_subcommand is None:
+        _show_catalog()
+
+
+@catalog_app.command("install")
+def install_source_cmd(
+    source_type: str = typer.Argument(help="Catalog source type to install (e.g. github, slack)"),
+) -> None:
+    """Download a catalog source via dlt init into ~/.tycoon/sources/."""
+    from tycoon.ingestion.source_manager import install_source, is_source_installed
+
+    if source_type not in CATALOG:
+        error(f"[bold]{source_type}[/bold] is not a known catalog source.")
+        info("Run [bold]tycoon data sources catalog[/bold] to see available sources.")
+        raise typer.Exit(1)
+
+    if is_source_installed(source_type):
+        info(f"Source [bold]{source_type}[/bold] is already installed.")
+        return
+
+    info(f"Running dlt init {source_type} ...")
+    if install_source(source_type):
+        success(f"Source [bold]{source_type}[/bold] installed to ~/.tycoon/sources/")
+        next_steps(
+            (f"tycoon data sources run {source_type}", "run the pipeline"),
+        )
+    else:
+        error(f"Failed to install [bold]{source_type}[/bold]. Check that dlt is installed.")
+        raise typer.Exit(1)
+
+
+# ---------------------------------------------------------------------------
+# list sub-group
+# ---------------------------------------------------------------------------
+
+
+def _list_sources() -> None:
+    """Print registered sources table."""
     _require_project()
 
     sources = config.sources
     if not sources:
         info("No sources registered yet.")
-        info("Browse available sources with [bold]tycoon sources catalog[/bold]")
+        info("Browse available sources with [bold]tycoon data sources catalog[/bold]")
         return
 
     table = Table(title="Registered Sources", show_lines=True)
@@ -69,7 +126,14 @@ def list_sources() -> None:
     console.print(table)
 
 
-@app.command("show")
+@list_app.callback()
+def list_default(ctx: typer.Context) -> None:
+    """List all registered data sources."""
+    if ctx.invoked_subcommand is None:
+        _list_sources()
+
+
+@list_app.command("show")
 def show_source(
     name: str = typer.Argument(help="Name of the source to show"),
 ) -> None:
@@ -100,6 +164,11 @@ def show_source(
         for key, value in src.config.items():
             display = "***" if any(s in key.lower() for s in ("token", "key", "secret", "password")) else value
             console.print(f"    {key}: {display}")
+
+
+# ---------------------------------------------------------------------------
+# add / remove
+# ---------------------------------------------------------------------------
 
 
 def _prompt_catalog_config(entry: CatalogEntry) -> dict[str, Any]:
@@ -210,13 +279,13 @@ _AUTO_NAMED_SOURCES: set[str] = {"rest_api", "filesystem"}
 
 @app.command("add")
 def add_source(
-    source_type: Optional[str] = typer.Argument(None, help="Source type — run 'tycoon sources catalog' to see all options"),
+    source_type: Optional[str] = typer.Argument(None, help="Source type — run 'tycoon data sources catalog' to see all options"),
 ) -> None:
     """Interactively register a new data source."""
     _require_project()
 
     if not source_type:
-        show_catalog()
+        _show_catalog()
         source_type = typer.prompt("Enter a source type from the catalog")
 
     catalog_entry = CATALOG.get(source_type)
@@ -229,7 +298,6 @@ def add_source(
         header(f"Add source: {source_type}")
 
     if catalog_entry and source_type in _AUTO_NAMED_SOURCES:
-        # Collect config first so we can derive the name from it
         source_config = _prompt_catalog_config(catalog_entry)
         source_name, schema_name = _derive_source_identity(source_type, source_config)
         info(f"Source name: [bold]{source_name}[/bold]")
@@ -275,7 +343,7 @@ def add_source(
 
     next_steps(
         (f"tycoon data sources run {source_name}", "load data into DuckDB"),
-        ("tycoon sources list", "see all registered sources"),
+        ("tycoon data sources list", "see all registered sources"),
     )
 
 
@@ -297,10 +365,10 @@ def _maybe_install_catalog_source(source_type: str) -> None:
         else:
             warn(
                 f"Failed to install '{source_type}'. "
-                f"You can retry with: tycoon sources install {source_type}"
+                f"You can retry with: tycoon data sources catalog install {source_type}"
             )
     else:
-        info(f"Skipped. Install later with: tycoon sources install {source_type}")
+        info(f"Skipped. Install later with: tycoon data sources catalog install {source_type}")
 
 
 def _maybe_install_dlt_extra(source_type: str) -> None:
@@ -327,33 +395,6 @@ def _maybe_install_dlt_extra(source_type: str) -> None:
             warn(f"Failed to install dlt[{source_type}]. You can install it manually.")
     else:
         info(f"Skipped. Install later with: uv pip install 'dlt[{source_type}]'")
-
-
-@app.command("install")
-def install_source_cmd(
-    source_type: str = typer.Argument(help="Catalog source type to install (e.g. github, slack)"),
-) -> None:
-    """Download a catalog source via dlt init into ~/.tycoon/sources/."""
-    from tycoon.ingestion.source_manager import install_source, is_source_installed
-
-    if source_type not in CATALOG:
-        error(f"[bold]{source_type}[/bold] is not a known catalog source.")
-        info("Run [bold]tycoon sources catalog[/bold] to see available sources.")
-        raise typer.Exit(1)
-
-    if is_source_installed(source_type):
-        info(f"Source [bold]{source_type}[/bold] is already installed.")
-        return
-
-    info(f"Running dlt init {source_type} ...")
-    if install_source(source_type):
-        success(f"Source [bold]{source_type}[/bold] installed to ~/.tycoon/sources/")
-        next_steps(
-            (f"tycoon data sources run {source_type}", "run the pipeline"),
-        )
-    else:
-        error(f"Failed to install [bold]{source_type}[/bold]. Check that dlt is installed.")
-        raise typer.Exit(1)
 
 
 @app.command("remove")

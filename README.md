@@ -68,9 +68,10 @@ Already have a pipeline? `tycoon init` will ask about your ingestion tool, wareh
 |---|---|
 | `tycoon init` | Scaffold a new project |
 | `tycoon data sources catalog` | Browse available source integrations |
+| `tycoon data sources catalog install <name>` | Download and install a source's dlt package |
 | `tycoon data sources add <type>` | Register a new data source |
-| `tycoon data sources install <name>` | Download and install a source's dlt package |
 | `tycoon data sources list` | List sources configured in this project |
+| `tycoon data sources list show <name>` | Show detailed config for a source |
 | `tycoon data sources run <name>` | Run ingestion for a named source |
 | `tycoon data sources run-all` | Run ingestion for all sources |
 | `tycoon data transform run` | Run dbt transformations |
