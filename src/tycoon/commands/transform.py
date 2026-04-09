@@ -2,27 +2,31 @@
 
 from __future__ import annotations
 
+import shutil
+import subprocess
 from typing import Optional
 
 import typer
-from dagster_dbt import DbtCliResource
 
 from tycoon.config import config
-from tycoon.dbt import dbt_project
-from tycoon.utils.console import ai_hint, console, header, next_steps, success, error
+from tycoon.utils.console import ai_hint, console, error, header, next_steps, success
 
 app = typer.Typer(
     help="Run dbt transformations against the local DuckDB warehouse.",
     no_args_is_help=True,
 )
 
-# ---------------------------------------------------------------------------
-# Shared options
-# ---------------------------------------------------------------------------
-
-_TARGET_OPTION = typer.Option("local", "--target", "-t", help="dbt target profile (default: local).")
+_TARGET_OPTION = typer.Option("dev", "--target", "-t", help="dbt target profile (default: dev).")
 _SELECT_OPTION = typer.Option(None, "--select", "-s", help="dbt model selection syntax (e.g. 'staging+').")
 _FULL_REFRESH_FLAG = typer.Option(False, "--full-refresh", help="Drop and recreate incremental models.")
+
+
+def _dbt_executable() -> str:
+    dbt = shutil.which("dbt")
+    if not dbt:
+        error("`dbt` not found on PATH. Is your virtual environment active?")
+        raise typer.Exit(1)
+    return dbt
 
 
 def _run_dbt(
@@ -32,28 +36,22 @@ def _run_dbt(
     full_refresh: bool,
     extra: list[str] | None = None,
 ) -> int:
-    """Invoke dbt using dagster-dbt to ensure consistent execution with Dagster."""
-    dbt_cli = DbtCliResource(
-        project_dir=dbt_project.project_dir,
-        profiles_dir=dbt_project.profiles_dir,
-        target=target,
-        dbt_executable=config.root / ".venv" / "bin" / "dbt",
-    )
+    """Invoke dbt as a subprocess from the configured dbt project directory."""
+    dbt = _dbt_executable()
+    project_dir = config.dbt_project_dir
 
-    cli_args = [dbt_cmd]
+    cmd = [dbt, dbt_cmd, "--target", target, "--profiles-dir", str(project_dir)]
     if select:
-        cli_args += ["--select", select]
+        cmd += ["--select", select]
     if full_refresh:
-        cli_args.append("--full-refresh")
+        cmd.append("--full-refresh")
     if extra:
-        cli_args.extend(extra)
+        cmd.extend(extra)
 
-    console.print(f"[dim]Running: dbt {' '.join(cli_args)} --target {target}[/dim]")
+    console.print(f"[dim]Running: {' '.join(cmd)}[/dim]")
 
-    invocation = dbt_cli.cli(args=cli_args, raise_on_error=False)
-    result = invocation.wait()
-
-    return 0 if result.is_successful() else 1
+    result = subprocess.run(cmd, cwd=project_dir)
+    return result.returncode
 
 
 # ---------------------------------------------------------------------------
@@ -142,38 +140,23 @@ def docs(
         error(f"dbt project directory not found: {config.dbt_project_dir}")
         raise typer.Exit(1)
 
-    # Step 1: generate docs
     console.print("[bold]Generating dbt docs...[/bold]")
-    gen_rc = _run_dbt(
-        "docs",
-        target=target,
-        select=None,
-        full_refresh=False,
-        extra=["generate"],
-    )
+    gen_rc = _run_dbt("docs", target=target, select=None, full_refresh=False, extra=["generate"])
     if gen_rc != 0:
         error(f"dbt docs generate failed with code {gen_rc}.")
         raise typer.Exit(gen_rc)
 
     success("Docs generated. Starting server...")
 
-    # Step 2: serve docs (blocking — user terminates with Ctrl+C)
-    dbt_cli = DbtCliResource(
-        project_dir=dbt_project.project_dir,
-        profiles_dir=dbt_project.profiles_dir,
-        target=target,
-        dbt_executable=config.root / ".venv" / "bin" / "dbt",
-    )
-    cli_args = ["docs", "serve", "--port", str(port)]
+    dbt = _dbt_executable()
+    project_dir = config.dbt_project_dir
+    cmd = [dbt, "docs", "serve", "--port", str(port), "--profiles-dir", str(project_dir)]
 
-    console.print(f"[dim]Running: dbt {' '.join(cli_args)} --target {target}[/dim]")
+    console.print(f"[dim]Running: {' '.join(cmd)}[/dim]")
     console.print(f"[bold green]dbt docs available at http://localhost:{port}[/bold green]")
     console.print("[dim]Press Ctrl+C to stop.[/dim]")
 
     try:
-        dbt_cli.cli(cli_args).wait()
+        subprocess.run(cmd, cwd=project_dir)
     except KeyboardInterrupt:
         console.print("\n[dim]dbt docs server stopped.[/dim]")
-    except Exception as exc:
-        error(f"dbt docs serve failed: {exc}")
-        raise typer.Exit(1)
