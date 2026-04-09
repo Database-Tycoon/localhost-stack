@@ -71,8 +71,8 @@ Already have a pipeline? `tycoon init` will ask about your ingestion tool, wareh
 | `tycoon data sources add <type>` | Register a new data source |
 | `tycoon data sources install <name>` | Download and install a source's dlt package |
 | `tycoon data sources list` | List sources configured in this project |
-| `tycoon data ingest run <name>` | Run ingestion for a named source |
-| `tycoon data ingest all` | Run ingestion for all sources |
+| `tycoon data sources run <name>` | Run ingestion for a named source |
+| `tycoon data sources run-all` | Run ingestion for all sources |
 | `tycoon data transform run` | Run dbt transformations |
 | `tycoon data explore <source>` | Scaffold dbt models and Rill dashboards for a source |
 | `tycoon data db query <sql>` | Run a SQL query against the warehouse |

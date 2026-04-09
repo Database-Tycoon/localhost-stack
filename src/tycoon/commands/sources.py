@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Optional
 
 import typer
@@ -10,7 +11,7 @@ from rich.table import Table
 from tycoon.config import config
 from tycoon.ingestion.catalog import CATALOG, CatalogEntry
 from tycoon.project import SourceConfig, load_project, save_project
-from tycoon.utils.console import console, error, header, info, next_steps, success, warn
+from tycoon.utils.console import ai_hint, console, error, header, info, next_steps, success, warn
 
 app = typer.Typer(help="Manage registered data sources.")
 
@@ -273,7 +274,7 @@ def add_source(
         _maybe_install_dlt_extra(source_type)
 
     next_steps(
-        (f"tycoon ingest run {source_name}", "load data into DuckDB"),
+        (f"tycoon data sources run {source_name}", "load data into DuckDB"),
         ("tycoon sources list", "see all registered sources"),
     )
 
@@ -348,7 +349,7 @@ def install_source_cmd(
     if install_source(source_type):
         success(f"Source [bold]{source_type}[/bold] installed to ~/.tycoon/sources/")
         next_steps(
-            (f"tycoon ingest run {source_type}", "run the pipeline"),
+            (f"tycoon data sources run {source_type}", "run the pipeline"),
         )
     else:
         error(f"Failed to install [bold]{source_type}[/bold]. Check that dlt is installed.")
@@ -377,3 +378,110 @@ def remove_source(
     config.reload()
 
     success(f"Source [bold]{name}[/bold] removed from tycoon.yml")
+
+
+# ---------------------------------------------------------------------------
+# Ingestion commands
+# ---------------------------------------------------------------------------
+
+_MaxRecordsOption = typer.Option(
+    None,
+    "--max-records",
+    "-n",
+    help="Cap the total number of records fetched per resource (useful for testing).",
+    show_default=False,
+)
+
+
+@app.command(name="run")
+def run_source(
+    source_name: Optional[str] = typer.Argument(None, help="Name of the registered source to ingest."),
+    max_records: Optional[int] = _MaxRecordsOption,
+) -> None:
+    """Ingest data from a registered source by name."""
+    from tycoon.ingestion.runner import run_source as _run_source
+
+    _require_project()
+
+    sources = config.sources
+    if not source_name:
+        if not sources:
+            error("No sources registered. Run 'tycoon data sources add' first.")
+            raise typer.Exit(1)
+        source_name = typer.prompt(
+            "Choose a source to ingest",
+            type=typer.Choice(list(sources.keys())),
+            show_choices=True,
+        )
+
+    if source_name not in sources:
+        error(f"Source '{source_name}' not found. Available: {', '.join(sources.keys()) or '(none)'}")
+        raise typer.Exit(1)
+
+    source_config = sources[source_name]
+    header(f"Ingesting: {source_name}")
+    info(f"Type: {source_config.type} | Schema: {source_config.schema_name}")
+    if max_records is not None:
+        info(f"Record cap: {max_records:,}")
+
+    config.ensure_data_dir()
+
+    try:
+        _pipeline, load_info = _run_source(
+            name=source_name,
+            source_config=source_config,
+            raw_db_path=config.raw_db,
+            max_records=max_records,
+        )
+        success(f"{source_name} load complete. {load_info}")
+        next_steps(
+            ("tycoon data transform run", "run dbt models on the ingested data"),
+            ("tycoon start --only rill", "open the Rill dashboard"),
+        )
+    except Exception as exc:
+        error(f"{source_name} pipeline failed: {exc}")
+        ai_hint(f"help me debug the {source_name} ingestion")
+        raise typer.Exit(1) from exc
+
+
+@app.command(name="run-all")
+def run_all(
+    max_records: Optional[int] = _MaxRecordsOption,
+) -> None:
+    """Run all registered source pipelines sequentially."""
+    from tycoon.ingestion.runner import run_source as _run_source
+
+    _require_project()
+
+    sources = config.sources
+    if not sources:
+        error("No sources registered. Run 'tycoon data sources add' first.")
+        raise typer.Exit(1)
+
+    total = len(sources)
+    header(f"Full Ingestion ({total} source{'s' if total != 1 else ''})")
+    if max_records is not None:
+        info(f"Record cap per resource: {max_records:,}")
+
+    config.ensure_data_dir()
+
+    for i, (name, source_config) in enumerate(sources.items(), 1):
+        info(f"Step {i}/{total} — {name} ({source_config.type})...")
+        try:
+            _pipeline, load_info = _run_source(
+                name=name,
+                source_config=source_config,
+                raw_db_path=config.raw_db,
+                max_records=max_records,
+            )
+            success(f"{name} complete. {load_info}")
+        except Exception as exc:
+            error(f"{name} pipeline failed: {exc}")
+            ai_hint(f"help me debug the {name} ingestion")
+            raise typer.Exit(1) from exc
+
+    success("All ingestion pipelines completed successfully.")
+    next_steps(
+        ("tycoon data transform run", "run dbt models on the ingested data"),
+        ("tycoon start --only rill", "open the Rill dashboard"),
+    )

@@ -5,7 +5,7 @@ from the local DuckDB file to a remote DuckLake catalog backed by S3.
 
 Usage
 -----
-Set the following environment variables before running any ``tycoon ingest``
+Set the following environment variables before running any ``tycoon data sources run``
 command:
 
     TYCOON_DUCKLAKE_CATALOG   — path to the DuckLake catalog file on S3,

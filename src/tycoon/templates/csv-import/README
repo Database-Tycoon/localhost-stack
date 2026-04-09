@@ -13,7 +13,7 @@ Quick start
 
 2. Run the ingestion pipeline:
 
-       tycoon ingest run files
+       tycoon data sources run files
 
 3. The parsed rows are written to data/files_raw.duckdb under the
    raw_files schema.  Each file becomes its own table named after the
@@ -34,7 +34,7 @@ Change the file_glob value in tycoon.yml from "*.csv" to "*.parquet":
 
 Then re-run:
 
-    tycoon ingest run files
+    tycoon data sources run files
 
 Notes
 -----

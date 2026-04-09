@@ -84,7 +84,7 @@ def explore_cmd(
     if not raw_db.exists():
         error(
             f"Raw database not found at {raw_db}. "
-            f"Run 'tycoon ingest run {source_name}' first."
+            f"Run 'tycoon data sources run {source_name}' first."
         )
         raise typer.Exit(1)
 
@@ -93,7 +93,7 @@ def explore_cmd(
     if not schema_tables:
         error(
             f"No tables found for schema '{schema_name}' in {raw_db}. "
-            f"Run 'tycoon ingest run {source_name}' first."
+            f"Run 'tycoon data sources run {source_name}' first."
         )
         raise typer.Exit(1)
 

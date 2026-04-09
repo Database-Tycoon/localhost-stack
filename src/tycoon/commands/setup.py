@@ -72,7 +72,7 @@ def setup_cmd(
         for i, name in enumerate(sources, 1):
             console.rule(f"[bold cyan]Step {i}/{total} — {name}")
             _run(
-                [*tycoon_bin, "ingest", "run", name, *ingest_flags],
+                [*tycoon_bin, "data", "sources", "run", name, *ingest_flags],
                 f"{name} ingestion",
             )
     else:

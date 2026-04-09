@@ -9,12 +9,11 @@ app = typer.Typer(help="Data pipeline — sources, ingestion, transforms, and ex
 
 def _register() -> None:
     """Wire sub-commands. Called once at import to avoid circular imports."""
-    from tycoon.commands import db, ingest, sources, transform
+    from tycoon.commands import db, sources, transform
     from tycoon.commands.explore import explore_cmd
     from tycoon.commands.setup import setup_cmd
 
     app.add_typer(sources.app, name="sources")
-    app.add_typer(ingest.app, name="ingest")
     app.add_typer(transform.app, name="transform")
     app.add_typer(db.app, name="db")
     app.command(name="explore")(explore_cmd)

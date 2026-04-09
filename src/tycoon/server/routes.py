@@ -103,7 +103,7 @@ async def run_pipeline(source_name: str) -> dict:
         )
 
     run_id = f"pipeline-{source_name}-{uuid.uuid4().hex[:8]}"
-    cmd = [sys.executable, "-m", "tycoon", "ingest", "run", source_name]
+    cmd = [sys.executable, "-m", "tycoon", "data", "sources", "run", source_name]
 
     try:
         await subprocess_manager.start_run(run_id, cmd)
