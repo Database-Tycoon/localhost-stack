@@ -76,7 +76,8 @@ Already have a pipeline? `tycoon init` will ask about your ingestion tool, wareh
 | `tycoon data transform run` | Run dbt transformations |
 | `tycoon data explore <source>` | Scaffold dbt models and Rill dashboards for a source |
 | `tycoon data db query <sql>` | Run a SQL query against the warehouse |
-| `tycoon data setup` | Run the built-in NYC demo setup |
+| `tycoon data run-all` | Ingest all sources then run dbt build |
+| `tycoon data status` | Show freshness and row counts for each source |
 | `tycoon start` | Start Rill, Dagster, Nao, and the web UI |
 | `tycoon stop` | Stop all services |
 | `tycoon ask chat` | Query your data in natural language (Nao) |

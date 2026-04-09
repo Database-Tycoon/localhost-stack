@@ -11,13 +11,15 @@ def _register() -> None:
     """Wire sub-commands. Called once at import to avoid circular imports."""
     from tycoon.commands import db, sources, transform
     from tycoon.commands.explore import explore_cmd
-    from tycoon.commands.setup import setup_cmd
+    from tycoon.commands.run_all import run_all_cmd
+    from tycoon.commands.status import status_cmd
 
     app.add_typer(sources.app, name="sources")
     app.add_typer(transform.app, name="transform")
     app.add_typer(db.app, name="db")
     app.command(name="explore")(explore_cmd)
-    app.command(name="setup")(setup_cmd)
+    app.command(name="run-all")(run_all_cmd)
+    app.command(name="status")(status_cmd)
 
 
 _register()
