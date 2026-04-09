@@ -28,6 +28,12 @@ For AI natural language queries:
 pip install "tycoon[ask]"
 ```
 
+For the web UI (coming in 0.2):
+
+```bash
+pip install "tycoon[server]"
+```
+
 Requirements: Python >= 3.12
 
 ---

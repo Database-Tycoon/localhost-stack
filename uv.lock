@@ -519,68 +519,6 @@ wheels = [
 ]
 
 [[package]]
-name = "database-tycoon"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "dbt-core" },
-    { name = "dbt-duckdb" },
-    { name = "dlt", extra = ["duckdb"] },
-    { name = "duckdb" },
-    { name = "fastapi" },
-    { name = "httpx" },
-    { name = "pydantic" },
-    { name = "pyyaml" },
-    { name = "rich" },
-    { name = "typer" },
-    { name = "uvicorn", extra = ["standard"] },
-    { name = "websockets" },
-]
-
-[package.optional-dependencies]
-ask = [
-    { name = "ibis-framework", extra = ["duckdb"] },
-    { name = "nao-core" },
-]
-dagster = [
-    { name = "dagster" },
-    { name = "dagster-dbt" },
-    { name = "dagster-dlt" },
-    { name = "dagster-webserver" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "dagster", marker = "extra == 'dagster'", specifier = "==1.12.20" },
-    { name = "dagster-dbt", marker = "extra == 'dagster'", specifier = "==0.28.20" },
-    { name = "dagster-dlt", marker = "extra == 'dagster'", specifier = "==0.28.20" },
-    { name = "dagster-webserver", marker = "extra == 'dagster'", specifier = "==1.12.20" },
-    { name = "dbt-core", specifier = "==1.11.7" },
-    { name = "dbt-duckdb", specifier = "==1.10.1" },
-    { name = "dlt", extras = ["duckdb"], specifier = "==1.24.0" },
-    { name = "duckdb", specifier = "==1.5.1" },
-    { name = "fastapi", specifier = "==0.135.2" },
-    { name = "httpx", specifier = "==0.28.1" },
-    { name = "ibis-framework", extras = ["duckdb"], marker = "extra == 'ask'", specifier = "==12.0.0" },
-    { name = "nao-core", marker = "extra == 'ask'", specifier = "==0.0.59" },
-    { name = "pydantic", specifier = "==2.12.5" },
-    { name = "pyyaml", specifier = "==6.0.3" },
-    { name = "rich", specifier = "==14.3.3" },
-    { name = "typer", specifier = "==0.24.1" },
-    { name = "uvicorn", extras = ["standard"], specifier = "==0.42.0" },
-    { name = "websockets", specifier = "==16.0" },
-]
-provides-extras = ["dagster", "ask"]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = "==9.0.2" }]
-
-[[package]]
 name = "dbt-adapters"
 version = "1.22.9"
 source = { registry = "https://pypi.org/simple" }
@@ -624,7 +562,7 @@ wheels = [
 
 [[package]]
 name = "dbt-core"
-version = "1.11.7"
+version = "1.11.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "agate" },
@@ -650,9 +588,9 @@ dependencies = [
     { name = "sqlparse" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/34/50/1053e2ebf77e01cfbf79fada97d0aaf8ee85e580363612b43a23c84bb20a/dbt_core-1.11.7.tar.gz", hash = "sha256:3bacae28f4c687280d91671a1694f52a1654e472bebc8313b37870ac3d61e42b", size = 919885, upload-time = "2026-03-04T16:16:26.518Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/54/4f/5524b85f0bd94053ee51fe7e8b0011295f056da707c754975ed7da3888f9/dbt_core-1.11.8.tar.gz", hash = "sha256:1bfe0b40c958785680a1b2b894b0851f5bf780ddc058747dd1e62c389b0d3b1d", size = 972635, upload-time = "2026-04-08T19:01:46.63Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/57/88/28a88f807e38bee4b6308f4a39a02fd818040a36aac883b3041b18c1be9b/dbt_core-1.11.7-py3-none-any.whl", hash = "sha256:047b4ac6bd4541dd33a6642dedd7fcd8b998e3f5ec6e7083436b369558a995d6", size = 1009631, upload-time = "2026-03-04T16:16:24.818Z" },
+    { url = "https://files.pythonhosted.org/packages/36/47/a07061c70e0872d8f49fbd12cf93f481b22cabb2e75016ce00aa3520a7ab/dbt_core-1.11.8-py3-none-any.whl", hash = "sha256:13ff79252a7ae9c9acc7de243789b72f04f7f915f05930d3407edeeea3758b6f", size = 1061289, upload-time = "2026-04-08T19:01:44.83Z" },
 ]
 
 [[package]]
@@ -848,7 +786,7 @@ wheels = [
 
 [[package]]
 name = "fastapi"
-version = "0.135.2"
+version = "0.135.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-doc" },
@@ -857,9 +795,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "typing-inspection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c4/73/5903c4b13beae98618d64eb9870c3fac4f605523dd0312ca5c80dadbd5b9/fastapi-0.135.2.tar.gz", hash = "sha256:88a832095359755527b7f63bb4c6bc9edb8329a026189eed83d6c1afcf419d56", size = 395833, upload-time = "2026-03-23T14:12:41.697Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f7/e6/7adb4c5fa231e82c35b8f5741a9f2d055f520c29af5546fd70d3e8e1cd2e/fastapi-0.135.3.tar.gz", hash = "sha256:bd6d7caf1a2bdd8d676843cdcd2287729572a1ef524fc4d65c17ae002a1be654", size = 396524, upload-time = "2026-04-01T16:23:58.188Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8f/ea/18f6d0457f9efb2fc6fa594857f92810cadb03024975726db6546b3d6fcf/fastapi-0.135.2-py3-none-any.whl", hash = "sha256:0af0447d541867e8db2a6a25c23a8c4bd80e2394ac5529bd87501bbb9e240ca5", size = 117407, upload-time = "2026-03-23T14:12:43.284Z" },
+    { url = "https://files.pythonhosted.org/packages/84/a4/5caa2de7f917a04ada20018eccf60d6cc6145b0199d55ca3711b0fc08312/fastapi-0.135.3-py3-none-any.whl", hash = "sha256:9b0f590c813acd13d0ab43dd8494138eb58e484bfac405db1f3187cfc5810d98", size = 117734, upload-time = "2026-04-01T16:23:59.328Z" },
 ]
 
 [[package]]
@@ -2713,11 +2651,11 @@ wheels = [
 
 [[package]]
 name = "sqlparse"
-version = "0.5.4"
+version = "0.5.5"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/18/67/701f86b28d63b2086de47c942eccf8ca2208b3be69715a1119a4e384415a/sqlparse-0.5.4.tar.gz", hash = "sha256:4396a7d3cf1cd679c1be976cf3dc6e0a51d0111e87787e7a8d780e7d5a998f9e", size = 120112, upload-time = "2025-11-28T07:10:18.377Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/90/76/437d71068094df0726366574cf3432a4ed754217b436eb7429415cf2d480/sqlparse-0.5.5.tar.gz", hash = "sha256:e20d4a9b0b8585fdf63b10d30066c7c94c5d7a7ec47c889a2d83a3caa93ff28e", size = 120815, upload-time = "2025-12-19T07:17:45.073Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/25/70/001ee337f7aa888fb2e3f5fd7592a6afc5283adb1ed44ce8df5764070f22/sqlparse-0.5.4-py3-none-any.whl", hash = "sha256:99a9f0314977b76d776a0fcb8554de91b9bb8a18560631d6bc48721d07023dcb", size = 45933, upload-time = "2025-11-28T07:10:19.73Z" },
+    { url = "https://files.pythonhosted.org/packages/49/4b/359f28a903c13438ef59ebeee215fb25da53066db67b305c125f1c6d2a25/sqlparse-0.5.5-py3-none-any.whl", hash = "sha256:12a08b3bf3eec877c519589833aed092e2444e68240a3577e8e26148acc7b1ba", size = 46138, upload-time = "2025-12-19T07:17:46.573Z" },
 ]
 
 [[package]]
@@ -2854,6 +2792,70 @@ wheels = [
 ]
 
 [[package]]
+name = "tycoon"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "dbt-core" },
+    { name = "dbt-duckdb" },
+    { name = "dlt", extra = ["duckdb"] },
+    { name = "duckdb" },
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+    { name = "rich" },
+    { name = "typer" },
+]
+
+[package.optional-dependencies]
+ask = [
+    { name = "ibis-framework", extra = ["duckdb"] },
+    { name = "nao-core" },
+]
+dagster = [
+    { name = "dagster" },
+    { name = "dagster-dbt" },
+    { name = "dagster-dlt" },
+    { name = "dagster-webserver" },
+]
+server = [
+    { name = "fastapi" },
+    { name = "uvicorn", extra = ["standard"] },
+    { name = "websockets" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "dagster", marker = "extra == 'dagster'", specifier = "==1.12.20" },
+    { name = "dagster-dbt", marker = "extra == 'dagster'", specifier = "==0.28.20" },
+    { name = "dagster-dlt", marker = "extra == 'dagster'", specifier = "==0.28.20" },
+    { name = "dagster-webserver", marker = "extra == 'dagster'", specifier = "==1.12.20" },
+    { name = "dbt-core", specifier = "==1.11.8" },
+    { name = "dbt-duckdb", specifier = "==1.10.1" },
+    { name = "dlt", extras = ["duckdb"], specifier = "==1.24.0" },
+    { name = "duckdb", specifier = "==1.5.1" },
+    { name = "fastapi", marker = "extra == 'server'", specifier = "==0.135.3" },
+    { name = "httpx", specifier = "==0.28.1" },
+    { name = "ibis-framework", extras = ["duckdb"], marker = "extra == 'ask'", specifier = "==12.0.0" },
+    { name = "nao-core", marker = "extra == 'ask'", specifier = "==0.0.59" },
+    { name = "pydantic", specifier = "==2.12.5" },
+    { name = "pyyaml", specifier = "==6.0.3" },
+    { name = "rich", specifier = "==14.3.3" },
+    { name = "typer", specifier = "==0.24.1" },
+    { name = "uvicorn", extras = ["standard"], marker = "extra == 'server'", specifier = "==0.44.0" },
+    { name = "websockets", marker = "extra == 'server'", specifier = "==16.0" },
+]
+provides-extras = ["server", "dagster", "ask"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = "==9.0.2" }]
+
+[[package]]
 name = "typer"
 version = "0.24.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2934,15 +2936,15 @@ wheels = [
 
 [[package]]
 name = "uvicorn"
-version = "0.42.0"
+version = "0.44.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "h11" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e3/ad/4a96c425be6fb67e0621e62d86c402b4a17ab2be7f7c055d9bd2f638b9e2/uvicorn-0.42.0.tar.gz", hash = "sha256:9b1f190ce15a2dd22e7758651d9b6d12df09a13d51ba5bf4fc33c383a48e1775", size = 85393, upload-time = "2026-03-16T06:19:50.077Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5e/da/6eee1ff8b6cbeed47eeb5229749168e81eb4b7b999a1a15a7176e51410c9/uvicorn-0.44.0.tar.gz", hash = "sha256:6c942071b68f07e178264b9152f1f16dfac5da85880c4ce06366a96d70d4f31e", size = 86947, upload-time = "2026-04-06T09:23:22.826Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0a/89/f8827ccff89c1586027a105e5630ff6139a64da2515e24dafe860bd9ae4d/uvicorn-0.42.0-py3-none-any.whl", hash = "sha256:96c30f5c7abe6f74ae8900a70e92b85ad6613b745d4879eb9b16ccad15645359", size = 68830, upload-time = "2026-03-16T06:19:48.325Z" },
+    { url = "https://files.pythonhosted.org/packages/b7/23/a5bbd9600dd607411fa644c06ff4951bec3a4d82c4b852374024359c19c0/uvicorn-0.44.0-py3-none-any.whl", hash = "sha256:ce937c99a2cc70279556967274414c087888e8cec9f9c94644dfca11bd3ced89", size = 69425, upload-time = "2026-04-06T09:23:21.524Z" },
 ]
 
 [package.optional-dependencies]
