@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "database-tycoon"
+name = "tycoon"
 version = "0.1.0"
 description = "Database Tycoon — local-first analytics CLI that adapts to your existing data stack"
 readme = "README.md"
@@ -47,9 +47,9 @@ ask = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/database-tycoon/localhost-stack"
-Repository = "https://github.com/database-tycoon/localhost-stack"
-Issues = "https://github.com/database-tycoon/localhost-stack/issues"
+Homepage = "https://github.com/Database-Tycoon/localhost-stack"
+Repository = "https://github.com/Database-Tycoon/localhost-stack"
+Issues = "https://github.com/Database-Tycoon/localhost-stack/issues"
 
 [dependency-groups]
 dev = ["pytest==9.0.2"]
