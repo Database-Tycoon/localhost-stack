@@ -58,7 +58,9 @@ ai-workbench/
 .tycoon/nao/repos/
 .tycoon/nao/agent/
 
-# tycoon runtime state (PIDs, locks)
-.tycoon/run/
+# tycoon runtime state (PIDs, locks, local nao/dagster config)
+.tycoon/
 logs/
 .claude/worktrees/
+
+gha-creds-*.json

@@ -40,3 +40,6 @@ sources:
     schema: raw_pokeapi
 dbt_project_dir: dbt_project
 rill_dir: rill
+ask:
+  llm:
+    provider: openai
