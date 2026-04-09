@@ -254,7 +254,7 @@ def _mode_next_steps(stack: StackConfig, existing_dbt_path: str | None) -> None:
         # Greenfield / dlt-managed
         next_steps(
             ("tycoon data sources catalog", "browse available data sources"),
-            ("tycoon setup", "ingest the built-in NYC demo data"),
+            ("tycoon data sources add", "add your first data source"),
             ("tycoon ask init", "set up the AI analytics agent"),
         )
 
@@ -315,7 +315,7 @@ def init_cmd(
         success(f"Project '{project_name}' initialized from template '{template}'!")
         next_steps(
             ("tycoon data sources catalog", "browse available data sources"),
-            ("tycoon setup", "ingest the built-in NYC demo data"),
+            ("tycoon data sources add", "add your first data source"),
             ("tycoon ask init", "set up the AI analytics agent"),
         )
     else:

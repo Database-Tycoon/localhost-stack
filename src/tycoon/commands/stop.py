@@ -7,9 +7,11 @@ import signal
 
 import typer
 
+from tycoon.constants import PORTS
 from tycoon.utils.console import info, success, warn
 
-_SERVER_PORTS = {"rill": 9009, "dagster": 3000, "nao": 5005}
+_SERVER_NAMES = ["tycoon", "rill", "dagster", "nao"]
+_SERVER_PORTS = {name: PORTS[name] for name in _SERVER_NAMES}
 
 
 def stop_cmd(
@@ -21,7 +23,7 @@ def stop_cmd(
     """Stop tycoon servers started by `tycoon start`."""
     from tycoon.commands.start import _pid_file, clear_pids
 
-    targets = list(services) if services else list(_SERVER_PORTS.keys())
+    targets = list(services) if services else _SERVER_NAMES
 
     pid_file = _pid_file()
     if pid_file.exists():

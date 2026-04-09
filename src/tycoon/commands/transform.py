@@ -77,7 +77,7 @@ def run(
         success("dbt run completed successfully.")
         next_steps(
             ("tycoon start --only rill", "explore data in the Rill dashboard"),
-            ("tycoon ai pipeline document-staging --model <model>", "document and test a model with AI"),
+            ("tycoon data status", "check source freshness and row counts"),
         )
     else:
         error(f"dbt run exited with code {rc}.")

@@ -24,8 +24,6 @@ raw_stripe.duckdb
 
 These files contain the raw schema as produced by dlt, including dlt metadata tables (`_dlt_loads`, `_dlt_pipeline_state`). They are attached **read-only** in the dbt profile to prevent transformation runs from writing back to the raw layer.
 
-The NYC transit demo uses `nyc_open_data_raw.duckdb` (raw) and `nyc_open_data_local.duckdb` (pre-transformed local copy).
-
 ### Warehouse database (dbt output)
 
 ```
@@ -40,7 +38,7 @@ Written by dbt transformation runs. This is the single database read by Rill das
 
 | File | Written by | Read by |
 |---|---|---|
-| `raw_<source>.duckdb` | `tycoon data ingest run <source>` | dbt (read-only attach) |
+| `raw_<source>.duckdb` | `tycoon data sources run <source>` | dbt (read-only attach) |
 | `warehouse.duckdb` | `tycoon data transform run` | Rill, Nao, `tycoon data db` |
 
 ---

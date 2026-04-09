@@ -35,8 +35,6 @@ Semantic layer definitions for use with Nao and Rill.
 | `stripe` | customer, invoice, product, subscription | (via dlt-hub passthrough — see below) |
 | `hubspot` | companies, contacts, deals, tickets | (via dlt-hub passthrough — see below) |
 | `notion` | stg_notion__databases, stg_notion__pages, stg_notion__users | notion__pages, notion__workspace_activity |
-| `mta` | stg_mta__bus_routes, stg_mta__bus_stops | dim_bus_lanes, dim_bus_segments, dim_date, dim_time_of_day |
-| `nyc_dot` | (NYC DOT traffic models) | rpt_borough_comparison, rpt_corridor_summary, rpt_monthly_trends, and others |
 
 ---
 

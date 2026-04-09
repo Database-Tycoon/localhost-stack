@@ -42,7 +42,7 @@ def header(msg: str) -> None:
 
 def ai_hint(suggestion: str) -> None:
     """Print a hint suggesting an AI command for follow-up."""
-    console.print(f"[dim]Tip: [bold]tycoon ai ask \"{suggestion}\"[/bold][/dim]")
+    console.print(f"[dim]Tip: [bold]tycoon ask chat \"{suggestion}\"[/bold][/dim]")
 
 
 def next_steps(*suggestions: tuple[str, str]) -> None:

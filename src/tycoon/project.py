@@ -152,5 +152,5 @@ def load_project(project_root: Path) -> TycoonProject | None:
 def save_project(project: TycoonProject, project_root: Path) -> None:
     """Write tycoon.yml to disk."""
     path = project_root / PROJECT_FILENAME
-    data = project.model_dump(by_alias=True, exclude_none=True)
+    data = project.model_dump(by_alias=True, exclude_none=True, mode="json")
     path.write_text(yaml.dump(data, default_flow_style=False, sort_keys=False))

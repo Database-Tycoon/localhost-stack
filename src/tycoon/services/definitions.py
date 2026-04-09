@@ -28,11 +28,6 @@ def get_service_definitions() -> list[ServiceDef]:
     """
     defs: list[ServiceDef] = [
         ServiceDef(
-            name="dlt_ui",
-            port=PORTS["dlt_ui"],
-            command=["dlt", "pipeline", "nyc_dot_pipeline", "show"],
-        ),
-        ServiceDef(
             name="duckdb_ui",
             port=PORTS["duckdb_ui"],
             command=[

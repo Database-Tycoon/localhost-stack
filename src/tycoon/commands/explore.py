@@ -1,4 +1,4 @@
-"""tycoon explore — auto-scaffold dbt staging models and Rill dashboards."""
+"""tycoon data analyze — auto-scaffold dbt staging models and Rill dashboards."""
 
 from __future__ import annotations
 
@@ -12,10 +12,10 @@ from tycoon.config import config
 from tycoon.utils.console import ai_hint, error, header, info, success, warn
 
 
-def explore_cmd(
+def analyze_cmd(
     source_name: Annotated[
         Optional[str],
-        typer.Argument(help="Name of the registered source to explore."),
+        typer.Argument(help="Name of the registered source to analyze."),
     ] = None,
     no_rill: Annotated[
         bool,
@@ -42,8 +42,8 @@ def explore_cmd(
     """Auto-scaffold dbt staging models and Rill dashboards for a registered source.
 
     Introspects the raw DuckDB database for the given source, generates dbt
-    staging models and Rill explore dashboards, then optionally builds the
-    staging layer with dbt.
+    staging models and Rill dashboards, then optionally builds the staging
+    layer with dbt.
     """
     from tycoon.scaffolding.dbt_generator import generate_staging_models
     from tycoon.scaffolding.rill_generator import generate_rill_config
@@ -61,7 +61,7 @@ def explore_cmd(
             error("No sources found in tycoon.yml. Run 'tycoon sources add' first.")
             raise typer.Exit(1)
         source_name = typer.prompt(
-            "Choose a source to explore",
+            "Choose a source to analyze",
             type=typer.Choice(list(sources.keys())),
             show_choices=True,
         )

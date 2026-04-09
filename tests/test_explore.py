@@ -1,4 +1,4 @@
-"""Tests for `tycoon explore` command, dbt_generator, and rill_generator."""
+"""Tests for `tycoon data analyze` command, dbt_generator, and rill_generator."""
 
 from __future__ import annotations
 
@@ -68,26 +68,26 @@ def test_db_with_nested(tmp_path: Path) -> Path:
 
 
 # ---------------------------------------------------------------------------
-# CLI: explore --help
+# CLI: analyze --help
 # ---------------------------------------------------------------------------
 
 
-class TestExploreHelp:
-    """Verify the explore command is registered and shows help."""
+class TestAnalyzeHelp:
+    """Verify the analyze command is registered and shows help."""
 
-    def test_explore_help_exits_zero(self, cli_runner):
-        result = cli_runner.invoke(app, ["explore", "--help"])
+    def test_analyze_help_exits_zero(self, cli_runner):
+        result = cli_runner.invoke(app, ["data", "analyze", "--help"])
         assert result.exit_code == 0
 
-    def test_explore_help_shows_options(self, cli_runner):
-        result = cli_runner.invoke(app, ["explore", "--help"])
+    def test_analyze_help_shows_options(self, cli_runner):
+        result = cli_runner.invoke(app, ["data", "analyze", "--help"])
         assert "--no-rill" in result.stdout
         assert "--no-dbt" in result.stdout
         assert "--build" in result.stdout
 
-    def test_explore_appears_in_top_level_help(self, cli_runner):
-        result = cli_runner.invoke(app, ["--help"])
-        assert "explore" in result.stdout
+    def test_analyze_appears_in_data_help(self, cli_runner):
+        result = cli_runner.invoke(app, ["data", "--help"])
+        assert "analyze" in result.stdout
 
 
 # ---------------------------------------------------------------------------
@@ -635,27 +635,27 @@ class TestExploreDashboardColumns:
 
 
 # ---------------------------------------------------------------------------
-# CLI: explore command errors
+# CLI: analyze command errors
 # ---------------------------------------------------------------------------
 
 
-class TestExploreCLIErrors:
-    """Verify the explore command fails gracefully when prerequisites are missing."""
+class TestAnalyzeCLIErrors:
+    """Verify the analyze command fails gracefully when prerequisites are missing."""
 
-    def test_explore_fails_without_tycoon_yml(self, cli_runner, tmp_path, monkeypatch):
+    def test_analyze_fails_without_tycoon_yml(self, cli_runner, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
-        result = cli_runner.invoke(app, ["explore", "my-source"])
+        result = cli_runner.invoke(app, ["data", "analyze", "my-source"])
         assert result.exit_code != 0
 
-    def test_explore_fails_for_unknown_source(self, cli_runner, tmp_path, monkeypatch):
+    def test_analyze_fails_for_unknown_source(self, cli_runner, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         (tmp_path / "tycoon.yml").write_text(
             "name: test\nversion: 0.1.0\nsources: {}\n"
         )
-        result = cli_runner.invoke(app, ["explore", "nonexistent-source"])
+        result = cli_runner.invoke(app, ["data", "analyze", "nonexistent-source"])
         assert result.exit_code != 0
 
-    def test_explore_fails_when_raw_db_missing(self, cli_runner, tmp_path, monkeypatch):
+    def test_analyze_fails_when_raw_db_missing(self, cli_runner, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         tycoon_yml = (
             "name: test\n"
@@ -670,5 +670,5 @@ class TestExploreCLIErrors:
         )
         (tmp_path / "tycoon.yml").write_text(tycoon_yml)
         # Do NOT create the raw db
-        result = cli_runner.invoke(app, ["explore", "my-src"])
+        result = cli_runner.invoke(app, ["data", "analyze", "my-src"])
         assert result.exit_code != 0

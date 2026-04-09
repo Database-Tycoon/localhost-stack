@@ -6,7 +6,6 @@ the nyc-transit template (src/tycoon/templates/nyc-transit/).
 
 # Service ports
 PORTS = {
-    "dlt_ui": 2718,
     "duckdb_ui": 4213,
     "dbt_docs": 8080,
     "recce": 8000,

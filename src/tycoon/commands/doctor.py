@@ -47,7 +47,7 @@ def _check_rill_project():
     if config.rill_dir.exists():
         success("Rill project found.")
     else:
-        warn("Rill project not found. `tycoon explore` will create it.")
+        warn("Rill project not found. `tycoon data analyze` will create it.")
 
 
 def _check_stack_config() -> None:
@@ -88,7 +88,7 @@ def _check_stack_config() -> None:
 
     if stack.bi == BITool.rill and stack.bi_managed:
         if not config.rill_dir.exists():
-            warn("Rill project not found. Run `tycoon explore` to scaffold dashboards.")
+            warn("Rill project not found. Run `tycoon data analyze` to scaffold dashboards.")
         else:
             success("Rill project found.")
     elif not stack.bi_managed and stack.bi != BITool.none:
