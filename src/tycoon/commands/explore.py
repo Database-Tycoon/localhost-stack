@@ -76,7 +76,7 @@ def analyze_cmd(
     source_cfg = sources[source_name]
     schema_name = source_cfg.schema_name
 
-    header(f"Exploring: {source_name}")
+    header(f"Analyzing: {source_name}")
     info(f"Schema: {schema_name}")
 
     # 3. Verify raw database exists and has data for this schema
@@ -159,8 +159,6 @@ def analyze_cmd(
         f"Explore scaffolding complete — "
         f"{len(all_generated)} file(s) generated for source '{source_name}'"
     )
-    ai_hint(f"improve the staging models for {source_name}")
-
     # 7. Optionally run dbt build
     if build:
         if no_dbt:
