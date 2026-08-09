@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> **This repository is sunset.** Development moved to **[Database-Tycoon/tycoon-cli](https://github.com/Database-Tycoon/tycoon-cli)** in April 2026, and all remaining open issues were migrated there on 2026-08-09 (tycoon-cli #202–#204). This archive is kept only so old links keep resolving.
+
 # tycoon
 
 A pip-installable CLI for local-first data analytics. No Docker, no cloud account required. Works with your existing stack or builds one from scratch.
